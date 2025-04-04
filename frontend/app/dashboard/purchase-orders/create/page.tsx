@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { DatePicker } from "@/components/date-picker"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { ArrowLeft, Plus, Trash2, Loader2, Save } from "lucide-react"
+import { ArrowLeft, Plus, Trash2, Loader2, Save, Mail } from "lucide-react"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import toast from "react-hot-toast"
 import {
@@ -82,6 +82,8 @@ export default function CreatePurchaseOrderPage() {
   const [totalAmount, setTotalAmount] = useState(0)
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
+  const [createdOrderId, setCreatedOrderId] = useState<string | null>(null)
+  const [isSendingEmail, setIsSendingEmail] = useState(false)
 
   // Khởi tạo form
   const form = useForm<FormValues>({
@@ -164,6 +166,29 @@ export default function CreatePurchaseOrderPage() {
     return () => subscription.unsubscribe()
   }, [form])
 
+  const handleSendEmail = async () => {
+    if (!createdOrderId) return;
+    
+    try {
+      setIsSendingEmail(true);
+      const response = await fetch(`http://localhost:5190/api/purchaseorder/${createdOrderId}/send-email`, {
+        method: 'POST'
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Lỗi khi gửi email');
+      }
+
+      const result = await response.json();
+      toast.success(result.message);
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setIsSendingEmail(false);
+    }
+  };
+
   // Xử lý khi submit form
   const onSubmit = async (data: FormValues) => {
     setIsSubmitting(true)
@@ -203,16 +228,14 @@ export default function CreatePurchaseOrderPage() {
       }
 
       const result = await response.json()
+      setCreatedOrderId(result.purchaseOrderID)
       
       toast.success(`Đơn hàng ${result.purchaseOrderID} đã được tạo thành công với tổng giá trị ${totalAmount.toLocaleString('vi-VN')} VND.`, {
         duration: 5000
       })
 
       setHasChanges(false)
-      
-      setTimeout(() => {
-        router.push("/dashboard/purchase-orders")
-      }, 1500)
+      router.push(`/dashboard/purchase-orders/edit/${result.purchaseOrderID}`)
     } catch (error) {
       console.error("Lỗi khi tạo đơn hàng:", error)
       toast.error(error instanceof Error ? error.message : "Không thể tạo đơn hàng. Vui lòng thử lại sau.")
@@ -516,22 +539,40 @@ export default function CreatePurchaseOrderPage() {
                 </div>
               </CardContent>
               <CardFooter className="flex justify-between bg-muted/20 rounded-b-lg">
-                <Button variant="outline" type="button" onClick={handleCancel} className="hover:bg-muted">
-                  Hủy
-                </Button>
-                <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-primary/90">
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Đang xử lý...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="mr-2 h-4 w-4" />
-                      Tạo đơn hàng
-                    </>
+                <div className="flex items-center gap-2 justify-end">
+                  <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-primary/90">
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Đang xử lý...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="mr-2 h-4 w-4" />
+                        Tạo đơn hàng
+                      </>
+                    )}
+                  </Button>
+                  {createdOrderId && (
+                    <Button 
+                      variant="outline" 
+                      onClick={handleSendEmail}
+                      disabled={isSendingEmail}
+                    >
+                      {isSendingEmail ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Đang gửi...
+                        </>
+                      ) : (
+                        <>
+                          <Mail className="mr-2 h-4 w-4" />
+                          Gửi email
+                        </>
+                      )}
+                    </Button>
                   )}
-                </Button>
+                </div>
               </CardFooter>
             </Card>
           </div>

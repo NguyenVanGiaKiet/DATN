@@ -1,97 +1,34 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ArrowLeft } from "lucide-react"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import * as z from "zod"
+import { Textarea } from "@/components/ui/textarea"
+import { ArrowLeft, Upload } from "lucide-react"
 import toast from "react-hot-toast"
-
-interface Category {
-  categoryID: number
-  categoryName: string
-}
-
-interface Supplier {
-  supplierID: number
-  supplierName: string
-}
-
-const productSchema = z.object({
-  productName: z.string().min(1, "Tên sản phẩm là bắt buộc"),
-  description: z.string().optional(),
-  unit: z.string().min(1, "Đơn vị tính là bắt buộc"),
-  unitPrice: z.number().min(0, "Giá phải lớn hơn 0"),
-  stockQuantity: z.number().min(0, "Số lượng tồn kho phải lớn hơn hoặc bằng 0"),
-  categoryID: z.number().min(1, "Danh mục là bắt buộc"),
-  supplierID: z.number().min(1, "Nhà cung cấp là bắt buộc"),
-  status: z.string().min(1, "Trạng thái là bắt buộc"),
-})
-
-type ProductFormValues = z.infer<typeof productSchema>
 
 export default function CreateProductPage() {
   const router = useRouter()
-  const [categories, setCategories] = useState<Category[]>([])
-  const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [loading, setLoading] = useState(false)
-
-  const form = useForm<ProductFormValues>({
-    resolver: zodResolver(productSchema),
-    defaultValues: {
-      productName: "",
-      description: "",
-      unit: "",
-      unitPrice: 0,
-      stockQuantity: 0,
-      categoryID: 0,
-      supplierID: 0,
-      status: "Đang bán",
-    },
+  const [formData, setFormData] = useState({
+    productName: "",
+    productCode: "",
+    categoryID: "",
+    supplierID: "",
+    description: "",
+    unit: "",
+    stockQuantity: 0,
+    reorderLevel: 0,
+    unitPrice: 0,
+    image: null as File | null
   })
 
-  useEffect(() => {
-    fetchCategories()
-    fetchSuppliers()
-  }, [])
-
-  const fetchCategories = async () => {
-    try {
-      const response = await fetch("http://localhost:5190/api/category")
-      if (!response.ok) {
-        throw new Error("Không thể tải danh mục")
-      }
-      const data = await response.json()
-      setCategories(data)
-    } catch (error) {
-      console.error("Lỗi khi tải danh mục:", error)
-      toast.error("Không thể tải danh mục. Vui lòng thử lại sau.")
-    }
-  }
-
-  const fetchSuppliers = async () => {
-    try {
-      const response = await fetch("http://localhost:5190/api/supplier")
-      if (!response.ok) {
-        throw new Error("Không thể tải nhà cung cấp")
-      }
-      const data = await response.json()
-      setSuppliers(data)
-    } catch (error) {
-      console.error("Lỗi khi tải nhà cung cấp:", error)
-      toast.error("Không thể tải nhà cung cấp. Vui lòng thử lại sau.")
-    }
-  }
-
-  const onSubmit = async (data: ProductFormValues) => {
+  const handleSubmit = async () => {
     try {
       setLoading(true)
       const response = await fetch("http://localhost:5190/api/product", {
@@ -99,14 +36,14 @@ export default function CreateProductPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(formData),
       })
 
       if (!response.ok) {
         throw new Error("Không thể tạo sản phẩm")
       }
 
-      toast.success("Sản phẩm đã được tạo thành công")
+      toast.success("Tạo sản phẩm thành công!")
       router.push("/dashboard/products")
     } catch (error) {
       console.error("Lỗi khi tạo sản phẩm:", error)
@@ -118,150 +55,78 @@ export default function CreateProductPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" size="icon" onClick={() => router.back()}>
+      <div className="flex items-center gap-4">
+        <Link href="/dashboard/products">
+          <Button variant="outline" size="icon">
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <h1 className="text-3xl font-bold tracking-tight">Tạo Sản phẩm Mới</h1>
-        </div>
+        </Link>
+        <h1 className="text-3xl font-bold tracking-tight">Thêm sản phẩm mới</h1>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Thông tin Sản phẩm</CardTitle>
-          <CardDescription>Nhập thông tin chi tiết về sản phẩm mới</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div className="grid grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="productName">Tên sản phẩm</Label>
-                <Input
-                  id="productName"
-                  placeholder="Nhập tên sản phẩm"
-                  {...form.register("productName")}
-                />
-                {form.formState.errors.productName && (
-                  <p className="text-sm text-red-500">
-                    {form.formState.errors.productName.message}
-                  </p>
-                )}
-              </div>
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Thông tin sản phẩm</CardTitle>
+            <CardDescription>Nhập thông tin chi tiết cho sản phẩm mới</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="product-name">Tên sản phẩm</Label>
+              <Input
+                id="product-name"
+                placeholder="Nhập tên sản phẩm"
+                value={formData.productName}
+                onChange={(e) => setFormData({ ...formData, productName: e.target.value })}
+              />
+            </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="unit">Đơn vị tính</Label>
-                <Input
-                  id="unit"
-                  placeholder="Nhập đơn vị tính"
-                  {...form.register("unit")}
-                />
-                {form.formState.errors.unit && (
-                  <p className="text-sm text-red-500">
-                    {form.formState.errors.unit.message}
-                  </p>
-                )}
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="product-code">Mã sản phẩm</Label>
+              <Input
+                id="product-code"
+                placeholder="Nhập mã sản phẩm"
+                value={formData.productCode}
+                onChange={(e) => setFormData({ ...formData, productCode: e.target.value })}
+              />
+            </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="unitPrice">Giá</Label>
-                <Input
-                  id="unitPrice"
-                  type="number"
-                  placeholder="Nhập giá sản phẩm"
-                  {...form.register("unitPrice", { valueAsNumber: true })}
-                />
-                {form.formState.errors.unitPrice && (
-                  <p className="text-sm text-red-500">
-                    {form.formState.errors.unitPrice.message}
-                  </p>
-                )}
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="category">Danh mục</Label>
+              <Select
+                value={formData.categoryID}
+                onValueChange={(value) => setFormData({ ...formData, categoryID: value })}
+              >
+                <SelectTrigger id="category">
+                  <SelectValue placeholder="Chọn danh mục" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">Đèn chiếu sáng</SelectItem>
+                  <SelectItem value="2">Lọc nước</SelectItem>
+                  <SelectItem value="3">Chậu cây</SelectItem>
+                  <SelectItem value="4">Thiết bị gia dụng</SelectItem>
+                  <SelectItem value="5">Thiết bị đeo</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="stockQuantity">Tồn kho</Label>
-                <Input
-                  id="stockQuantity"
-                  type="number"
-                  placeholder="Nhập số lượng tồn kho"
-                  {...form.register("stockQuantity", { valueAsNumber: true })}
-                />
-                {form.formState.errors.stockQuantity && (
-                  <p className="text-sm text-red-500">
-                    {form.formState.errors.stockQuantity.message}
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="categoryID">Danh mục</Label>
-                <Select
-                  onValueChange={(value) => form.setValue("categoryID", parseInt(value))}
-                  defaultValue={form.getValues("categoryID").toString()}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Chọn danh mục" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((category) => (
-                      <SelectItem key={category.categoryID} value={category.categoryID.toString()}>
-                        {category.categoryName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {form.formState.errors.categoryID && (
-                  <p className="text-sm text-red-500">
-                    {form.formState.errors.categoryID.message}
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="supplierID">Nhà cung cấp</Label>
-                <Select
-                  onValueChange={(value) => form.setValue("supplierID", parseInt(value))}
-                  defaultValue={form.getValues("supplierID").toString()}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Chọn nhà cung cấp" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {suppliers.map((supplier) => (
-                      <SelectItem key={supplier.supplierID} value={supplier.supplierID.toString()}>
-                        {supplier.supplierName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {form.formState.errors.supplierID && (
-                  <p className="text-sm text-red-500">
-                    {form.formState.errors.supplierID.message}
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="status">Trạng thái</Label>
-                <Select
-                  onValueChange={(value) => form.setValue("status", value)}
-                  defaultValue={form.getValues("status")}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Chọn trạng thái" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Đang bán">Đang bán</SelectItem>
-                    <SelectItem value="Ngừng bán">Ngừng bán</SelectItem>
-                    <SelectItem value="Hết hàng">Hết hàng</SelectItem>
-                  </SelectContent>
-                </Select>
-                {form.formState.errors.status && (
-                  <p className="text-sm text-red-500">
-                    {form.formState.errors.status.message}
-                  </p>
-                )}
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="supplier">Nhà cung cấp</Label>
+              <Select
+                value={formData.supplierID}
+                onValueChange={(value) => setFormData({ ...formData, supplierID: value })}
+              >
+                <SelectTrigger id="supplier">
+                  <SelectValue placeholder="Chọn nhà cung cấp" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">Luminance Creations</SelectItem>
+                  <SelectItem value="2">HydraClean Solutions</SelectItem>
+                  <SelectItem value="3">GreenGrowth Designers</SelectItem>
+                  <SelectItem value="4">FreshTech Appliances</SelectItem>
+                  <SelectItem value="5">Vitality Gear Co.</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
@@ -269,26 +134,89 @@ export default function CreateProductPage() {
               <Textarea
                 id="description"
                 placeholder="Nhập mô tả sản phẩm"
-                {...form.register("description")}
+                rows={4}
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               />
             </div>
+          </CardContent>
+        </Card>
 
-            <div className="flex justify-end gap-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => router.back()}
-                disabled={loading}
-              >
-                Hủy
-              </Button>
-              <Button type="submit" disabled={loading}>
-                {loading ? "Đang tạo..." : "Tạo sản phẩm"}
-              </Button>
+        <Card>
+          <CardHeader>
+            <CardTitle>Thông tin kho hàng & Giá</CardTitle>
+            <CardDescription>Thiết lập thông tin kho và giá cho sản phẩm</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="unit">Đơn vị tính</Label>
+                <Input
+                  id="unit"
+                  placeholder="Ví dụ: cái, hộp, kg"
+                  value={formData.unit}
+                  onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="stock-quantity">Số lượng tồn kho</Label>
+                <Input
+                  id="stock-quantity"
+                  type="number"
+                  min="0"
+                  placeholder="0"
+                  value={formData.stockQuantity}
+                  onChange={(e) => setFormData({ ...formData, stockQuantity: parseInt(e.target.value) })}
+                />
+              </div>
             </div>
-          </form>
-        </CardContent>
-      </Card>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="reorder-level">Mức tồn kho tối thiểu</Label>
+                <Input
+                  id="reorder-level"
+                  type="number"
+                  min="0"
+                  placeholder="0"
+                  value={formData.reorderLevel}
+                  onChange={(e) => setFormData({ ...formData, reorderLevel: parseInt(e.target.value) })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="unit-price">Đơn giá</Label>
+                <Input
+                  id="unit-price"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={formData.unitPrice}
+                  onChange={(e) => setFormData({ ...formData, unitPrice: parseFloat(e.target.value) })}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Hình ảnh sản phẩm</Label>
+              <div className="border-2 border-dashed rounded-md p-6 flex flex-col items-center justify-center">
+                <Upload className="h-8 w-8 text-muted-foreground mb-2" />
+                <p className="text-sm text-muted-foreground">Kéo thả hoặc nhấp để tải lên</p>
+                <p className="text-xs text-muted-foreground mt-1">PNG, JPG hoặc GIF (tối đa 2MB)</p>
+                <Button variant="outline" size="sm" className="mt-4">
+                  Chọn tệp
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+          <CardFooter className="flex justify-between">
+            <Button variant="outline">Lưu nháp</Button>
+            <Button onClick={handleSubmit} disabled={loading}>
+              {loading ? "Đang tạo..." : "Tạo sản phẩm"}
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
     </div>
   )
 }

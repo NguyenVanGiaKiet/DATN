@@ -15,6 +15,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarComponent } from "@/components/ui/calendar"
 import { format } from "date-fns"
 import { vi } from "date-fns/locale"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
+import { Textarea } from "@/components/ui/textarea"
 
 interface PurchaseOrder {
   purchaseOrderID: string
@@ -42,7 +44,7 @@ export default function PurchaseOrdersPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [dateFilter, setDateFilter] = useState<Date | undefined>()
   const [supplierFilter, setSupplierFilter] = useState<string>("all")
-  const itemsPerPage = 10
+  const itemsPerPage = 5
 
   useEffect(() => {
     fetchOrders()
@@ -56,7 +58,11 @@ export default function PurchaseOrdersPage() {
         throw new Error("Không thể tải dữ liệu đơn hàng")
       }
       const data = await response.json()
-      setOrders(data)
+      // Sắp xếp đơn hàng theo ngày đặt hàng mới nhất
+      const sortedOrders = data.sort((a: PurchaseOrder, b: PurchaseOrder) => 
+        new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime()
+      )
+      setOrders(sortedOrders)
     } catch (error) {
       console.error("Lỗi khi tải đơn đặt hàng:", error)
       toast.error("Không thể tải dữ liệu đơn hàng. Vui lòng thử lại sau.")
@@ -85,15 +91,21 @@ export default function PurchaseOrdersPage() {
   const getStatusClass = (status: string) => {
     switch (status) {
       case "Đang xử lý":
-        return "bg-yellow-100 text-yellow-800 border-yellow-300 hover:bg-yellow-200"
-      case "Đã phê duyệt":
-        return "bg-blue-100 text-blue-800 border-blue-300 hover:bg-blue-200"
-      case "Đã hoàn tất":
-        return "bg-green-100 text-green-800 border-green-300 hover:bg-green-200"
+        return "bg-yellow-100 text-yellow-800 border-yellow-300"
+      case "Đã gửi email":
+        return "bg-blue-100 text-blue-800 border-blue-300"
+      case "Đã xác nhận":
+        return "bg-green-100 text-green-800 border-green-300"
       case "Đã hủy":
-        return "bg-red-100 text-red-800 border-red-300 hover:bg-red-200"
+        return "bg-red-100 text-red-800 border-red-300"
+      case "Đang giao hàng":
+        return "bg-purple-100 text-purple-800 border-purple-300"
+      case "Đã nhận hàng":
+        return "bg-emerald-100 text-emerald-800 border-emerald-300"
+      case "Đã trả hàng":
+        return "bg-orange-100 text-orange-800 border-orange-300"
       default:
-        return "bg-gray-100 text-gray-800 border-gray-300 hover:bg-gray-200"
+        return "bg-gray-100 text-gray-800 border-gray-300"
     }
   }
 
@@ -161,8 +173,11 @@ export default function PurchaseOrdersPage() {
                 <SelectContent>
                   <SelectItem value="all">Tất cả trạng thái</SelectItem>
                   <SelectItem value="Đang xử lý">Đang xử lý</SelectItem>
-                  <SelectItem value="Đã phê duyệt">Đã phê duyệt</SelectItem>
-                  <SelectItem value="Đã hoàn tất">Đã hoàn tất</SelectItem>
+                  <SelectItem value="Đã gửi email">Đã gửi email</SelectItem>
+                  <SelectItem value="Đã xác nhận">Đã xác nhận</SelectItem>
+                  <SelectItem value="Đang giao hàng">Đang giao hàng</SelectItem>
+                  <SelectItem value="Đã nhận hàng">Đã nhận hàng</SelectItem>
+                  <SelectItem value="Đã trả hàng">Đã trả hàng</SelectItem>
                   <SelectItem value="Đã hủy">Đã hủy</SelectItem>
                 </SelectContent>
               </Select>

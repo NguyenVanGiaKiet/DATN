@@ -7,6 +7,9 @@ interface OrderStatsData {
   totalOrders: number
   processingOrders: number
   completedOrders: number
+  cancelledOrders: number
+  confirmedOrders: number
+  sentEmailOrders: number
   totalAmount: number
 }
 
@@ -15,6 +18,9 @@ export function OrderStats() {
     totalOrders: 0,
     processingOrders: 0,
     completedOrders: 0,
+    cancelledOrders: 0,
+    confirmedOrders: 0,
+    sentEmailOrders: 0,
     totalAmount: 0
   })
 
@@ -26,8 +32,11 @@ export function OrderStats() {
         
         const statsData = {
           totalOrders: data.length,
-          processingOrders: data.filter((order: any) => order.status === 'Processing').length,
-          completedOrders: data.filter((order: any) => order.status === 'Completed').length,
+          processingOrders: data.filter((order: any) => order.status === 'Đang xử lý').length,
+          completedOrders: data.filter((order: any) => order.status === 'Đã hoàn thành').length,
+          confirmedOrders: data.filter((order: any) => order.status === 'Đã xác nhận').length,
+          cancelledOrders: data.filter((order: any) => order.status === 'Đã hủy').length,
+          sentEmailOrders: data.filter((order: any) => order.status === 'Đã gửi email').length,
           totalAmount: data.reduce((sum: number, order: any) => sum + order.totalAmount, 0)
         }
         
@@ -56,8 +65,20 @@ export function OrderStats() {
             <p className="text-xl font-bold text-yellow-500">{stats.processingOrders}</p>
           </div>
           <div className="flex items-center justify-between">
+            <p className="text-sm font-medium">Đơn hàng đã gửi email:</p>
+            <p className="text-xl font-bold text-blue-500">{stats.sentEmailOrders}</p>
+          </div>
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium">Đơn hàng đã xác nhận:</p>
+            <p className="text-xl font-bold text-green-500">{stats.confirmedOrders}</p>
+          </div>
+          <div className="flex items-center justify-between">
             <p className="text-sm font-medium">Đơn hàng hoàn thành:</p>
             <p className="text-xl font-bold text-green-500">{stats.completedOrders}</p>
+          </div>
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium">Đơn hàng đã hủy:</p>
+            <p className="text-xl font-bold text-red-500">{stats.cancelledOrders}</p>
           </div>
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium">Tổng giá trị:</p>

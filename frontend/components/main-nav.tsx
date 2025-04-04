@@ -52,12 +52,6 @@ export function MainNav({ className, ...props }: MainNavProps) {
       active: pathname?.startsWith("/dashboard/returns"),
     },
     {
-      href: "/dashboard/approvals",
-      label: t("approvals"),
-      icon: CheckCircle,
-      active: pathname?.startsWith("/dashboard/approvals"),
-    },
-    {
       href: "/dashboard/reports",
       label: t("reports"),
       icon: BarChart3,

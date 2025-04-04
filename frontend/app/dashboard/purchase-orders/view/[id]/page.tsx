@@ -6,11 +6,14 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, Download, Printer, Edit, CheckCircle2, XCircle, AlertCircle } from "lucide-react"
+import { ArrowLeft, Download, Printer, Edit, CheckCircle, XCircle, AlertCircle, Mail } from "lucide-react"
 import toast from "react-hot-toast"
 import Link from "next/link"
 import { format } from "date-fns"
 import { vi } from "date-fns/locale"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
+import { Textarea } from "@/components/ui/textarea"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 
 interface PurchaseOrderDetail {
   productID: number
@@ -46,6 +49,12 @@ export default function ViewPurchaseOrderPage({ params }: { params: { id: string
   const router = useRouter()
   const [order, setOrder] = useState<PurchaseOrder | null>(null)
   const [loading, setLoading] = useState(true)
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false)
+  const [emailContent, setEmailContent] = useState("")
+  const [isSendingEmail, setIsSendingEmail] = useState(false)
+  const [isConfirming, setIsConfirming] = useState(false)
+  const [isCancelling, setIsCancelling] = useState(false)
+  const [showCancelDialog, setShowCancelDialog] = useState(false)
 
   useEffect(() => {
     fetchOrder()
@@ -72,10 +81,10 @@ export default function ViewPurchaseOrderPage({ params }: { params: { id: string
     switch (status) {
       case "Đang xử lý":
         return <AlertCircle className="h-4 w-4 text-yellow-500" />
-      case "Đã phê duyệt":
-        return <CheckCircle2 className="h-4 w-4 text-blue-500" />
-      case "Đã hoàn tất":
-        return <CheckCircle2 className="h-4 w-4 text-green-500" />
+      case "Đã gửi email":
+        return <CheckCircle className="h-4 w-4 text-blue-500" />
+      case "Đã xác nhận":
+        return <CheckCircle className="h-4 w-4 text-green-500" />
       case "Đã hủy":
         return <XCircle className="h-4 w-4 text-red-500" />
       default:
@@ -87,14 +96,127 @@ export default function ViewPurchaseOrderPage({ params }: { params: { id: string
     switch (status) {
       case "Đang xử lý":
         return "bg-yellow-100 text-yellow-800 border-yellow-300"
-      case "Đã phê duyệt":
+      case "Đã gửi email":
         return "bg-blue-100 text-blue-800 border-blue-300"
-      case "Đã hoàn tất":
+      case "Đã xác nhận":
         return "bg-green-100 text-green-800 border-green-300"
       case "Đã hủy":
         return "bg-red-100 text-red-800 border-red-300"
       default:
         return "bg-gray-100 text-gray-800 border-gray-300"
+    }
+  }
+
+  const handleSendEmailClick = () => {
+    if (!order) return
+
+    const content = `
+Kính gửi ${order.supplier.supplierName},
+
+Đơn đặt hàng: ${order.purchaseOrderID}
+Ngày đặt: ${format(new Date(order.orderDate), "dd/MM/yyyy", { locale: vi })}
+Ngày giao dự kiến: ${format(new Date(order.expectedDeliveryDate), "dd/MM/yyyy", { locale: vi })}
+Tổng giá trị: ${new Intl.NumberFormat("vi-VN", {
+  style: "currency",
+  currency: "VND",
+}).format(order.totalAmount)}
+
+Chi tiết đơn hàng:
+${order.purchaseOrderDetails.map(detail => 
+  `- ${detail.product.productName}: ${detail.quantity} ${detail.product.unit} x ${new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+  }).format(detail.unitPrice)}`
+).join('\n')}
+
+Trân trọng,
+[Tên công ty của bạn]`
+    setEmailContent(content)
+    setIsEmailModalOpen(true)
+  }
+
+  const handleSendEmail = async () => {
+    if (!order) return
+
+    try {
+      setIsSendingEmail(true)
+      const response = await fetch(`http://localhost:5190/api/purchaseorder/${order.purchaseOrderID}/send-email`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ emailContent }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Gửi email thất bại")
+      }
+
+      toast.success("Email đã được gửi thành công!")
+      setIsEmailModalOpen(false)
+      fetchOrder()
+    } catch (error) {
+      console.error("Lỗi khi gửi email:", error)
+      toast.error("Không thể gửi email. Vui lòng thử lại sau.")
+    } finally {
+      setIsSendingEmail(false)
+    }
+  }
+
+  const handleConfirmOrder = async () => {
+    try {
+      setIsConfirming(true)
+      const response = await fetch(`http://localhost:5190/api/purchaseorder/${params.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...order,
+          status: "Đã xác nhận"
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error("Không thể xác nhận đơn hàng")
+      }
+
+      toast.success("Đơn hàng đã được xác nhận thành công!")
+      fetchOrder()
+    } catch (error) {
+      console.error("Lỗi khi xác nhận đơn hàng:", error)
+      toast.error("Không thể xác nhận đơn hàng. Vui lòng thử lại sau.")
+    } finally {
+      setIsConfirming(false)
+    }
+  }
+
+  const handleCancelOrder = async () => {
+    try {
+      setIsCancelling(true)
+      const response = await fetch(`http://localhost:5190/api/purchaseorder/${params.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...order,
+          status: "Đã hủy"
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error("Không thể hủy đơn hàng")
+      }
+
+      toast.success("Đơn hàng đã được hủy thành công!")
+      setShowCancelDialog(false)
+      fetchOrder()
+    } catch (error) {
+      console.error("Lỗi khi hủy đơn hàng:", error)
+      toast.error("Không thể hủy đơn hàng. Vui lòng thử lại sau.")
+    } finally {
+      setIsCancelling(false)
     }
   }
 
@@ -150,6 +272,34 @@ export default function ViewPurchaseOrderPage({ params }: { params: { id: string
               Chỉnh sửa
             </Button>
           </Link>
+          <Button
+            variant={order?.status === "Đã gửi email" ? "outline" : "default"}
+            size="sm"
+            onClick={handleSendEmailClick}
+            disabled={isSendingEmail}
+          >
+            <Mail className="mr-2 h-4 w-4" />
+            {isSendingEmail ? "Đang gửi..." : order?.status === "Đã gửi email" ? "Gửi lại email" : "Gửi email"}
+          </Button>
+          <Button
+            variant={order?.status === "Đã gửi email" ? "default" : "outline"}
+            size="sm"
+            onClick={handleConfirmOrder}
+            disabled={isConfirming || order?.status !== "Đã gửi email"}
+          >
+            <CheckCircle className="mr-2 h-4 w-4" />
+            {isConfirming ? "Đang xác nhận..." : "Xác nhận đơn hàng"}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowCancelDialog(true)}
+            disabled={isCancelling || order?.status === "Đã hủy" || order?.status === "Đã xác nhận"}
+            className="text-red-500 hover:text-red-700"
+          >
+            <XCircle className="mr-2 h-4 w-4" />
+            {isCancelling ? "Đang hủy..." : "Hủy đơn hàng"}
+          </Button>
         </div>
       </div>
 
@@ -264,6 +414,74 @@ export default function ViewPurchaseOrderPage({ params }: { params: { id: string
           </Table>
         </CardContent>
       </Card>
+
+      <Dialog open={isEmailModalOpen} onOpenChange={setIsEmailModalOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Gửi Email Đơn Hàng</DialogTitle>
+            <DialogDescription>
+              Xem trước và chỉnh sửa nội dung email trước khi gửi
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <Textarea
+              value={emailContent}
+              onChange={(e) => setEmailContent(e.target.value)}
+              className="min-h-[200px]"
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsEmailModalOpen(false)}
+              disabled={isSendingEmail}
+            >
+              Hủy
+            </Button>
+            <Button
+              onClick={handleSendEmail}
+              disabled={isSendingEmail}
+            >
+              {isSendingEmail ? (
+                <>
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent mr-2" />
+                  Đang gửi...
+                </>
+              ) : (
+                "Gửi Email"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xác nhận hủy đơn hàng</AlertDialogTitle>
+            <AlertDialogDescription>
+              Bạn có chắc chắn muốn hủy đơn hàng này? Hành động này không thể hoàn tác.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isCancelling}>Không, giữ lại</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleCancelOrder}
+              disabled={isCancelling}
+              className="bg-red-500 hover:bg-red-600"
+            >
+              {isCancelling ? (
+                <>
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent mr-2" />
+                  Đang hủy...
+                </>
+              ) : (
+                "Có, hủy đơn hàng"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 } 

@@ -8,6 +8,7 @@ using MyWebAPI.Data;
 using MyWebAPI.Models;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc.Filters;
+using MyWebAPI.Services;
 
 namespace MyWebAPI.Controllers
 {
@@ -16,10 +17,12 @@ namespace MyWebAPI.Controllers
     public class PurchaseOrderController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly IEmailService _emailService;
 
-        public PurchaseOrderController(AppDbContext context)
+        public PurchaseOrderController(AppDbContext context, IEmailService emailService)
         {
             _context = context;
+            _emailService = emailService;
         }
 
         [HttpGet]
@@ -114,6 +117,36 @@ namespace MyWebAPI.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, new { message = $"Lỗi khi tạo đơn hàng: {ex.Message}" });
+            }
+        }
+
+        // POST: api/PurchaseOrder/{id}/send-email
+        [HttpPost("{id}/send-email")]
+        public async Task<IActionResult> SendEmail(string id)
+        {
+            try
+            {
+                var purchaseOrder = await _context.PurchaseOrders
+                    .Include(po => po.PurchaseOrderDetails)
+                    .ThenInclude(pod => pod.Product)
+                    .Include(po => po.Supplier)
+                    .FirstOrDefaultAsync(po => po.PurchaseOrderID == id);
+
+                if (purchaseOrder == null)
+                {
+                    return NotFound("Không tìm thấy đơn hàng");
+                }
+
+                await _emailService.SendPurchaseOrderEmail(purchaseOrder);
+
+                purchaseOrder.Status = "Đã gửi email";
+                await _context.SaveChangesAsync();
+
+                return Ok(new { message = "Email đã được gửi thành công" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = $"Lỗi khi gửi email: {ex.Message}" });
             }
         }
 
