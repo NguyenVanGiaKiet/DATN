@@ -47,11 +47,13 @@ export function RecentOrders() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Completed':
+      case 'Đã xác nhận':
         return 'text-green-500'
-      case 'Processing':
+      case 'Đã gửi email':
+        return 'text-blue-500'
+      case 'Đang xử lý':
         return 'text-yellow-500'
-      case 'Cancelled':
+      case 'Đã hủy':
         return 'text-red-500'
       default:
         return 'text-gray-500'
