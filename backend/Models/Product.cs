@@ -23,12 +23,10 @@ namespace MyWebAPI.Models
         public string Unit { get; set; }
 
         [Required]
-        [Column(TypeName = "decimal(18,2)")]
-        public decimal StockQuantity { get; set; }
+        public int StockQuantity { get; set; }
 
         [Required]
-        [Column(TypeName = "decimal(18,2)")]
-        public decimal ReorderLevel { get; set; }
+        public int ReorderLevel { get; set; }
 
         // Navigation properties
         [ForeignKey("CategoryID")]

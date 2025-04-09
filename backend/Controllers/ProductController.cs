@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MyWebAPI.Data;
 using MyWebAPI.Models;
+using Microsoft.Extensions.Logging;
 
 namespace MyWebAPI.Controllers
 {
@@ -14,10 +15,12 @@ namespace MyWebAPI.Controllers
     public class ProductController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly ILogger<ProductController> _logger;
 
-        public ProductController(AppDbContext context)
+        public ProductController(AppDbContext context, ILogger<ProductController> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         // GET: api/Product
@@ -71,42 +74,155 @@ namespace MyWebAPI.Controllers
 
         // POST: api/Product
         [HttpPost]
-        public async Task<ActionResult<Product>> CreateProduct(Product product)
+        public async Task<ActionResult<Product>> CreateProduct([FromBody] Product product)
         {
-            _context.Products.Add(product);
-            await _context.SaveChangesAsync();
+            try
+            {
+                // Kiểm tra dữ liệu đầu vào
+                if (product == null)
+                {
+                    return BadRequest(new { message = "Dữ liệu sản phẩm không hợp lệ" });
+                }
 
-            return CreatedAtAction(nameof(GetProduct), new { id = product.ProductID }, product);
+                // Kiểm tra CategoryID tồn tại
+                var category = await _context.Categories.FindAsync(product.CategoryID);
+                if (category == null)
+                {
+                    return BadRequest(new { message = "Danh mục không tồn tại" });
+                }
+
+                // Kiểm tra SupplierID tồn tại
+                var supplier = await _context.Suppliers.FindAsync(product.SupplierID);
+                if (supplier == null)
+                {
+                    return BadRequest(new { message = "Nhà cung cấp không tồn tại" });
+                }
+
+                // Kiểm tra dữ liệu đầu vào
+                if (string.IsNullOrEmpty(product.ProductName))
+                {
+                    return BadRequest(new { message = "Tên sản phẩm là bắt buộc" });
+                }
+
+                if (string.IsNullOrEmpty(product.Unit))
+                {
+                    return BadRequest(new { message = "Đơn vị tính là bắt buộc" });
+                }
+
+                if (product.StockQuantity < 0)
+                {
+                    return BadRequest(new { message = "Số lượng tồn kho phải lớn hơn hoặc bằng 0" });
+                }
+
+                if (product.ReorderLevel < 0)
+                {
+                    return BadRequest(new { message = "Số lượng tồn kho tối thiểu phải lớn hơn hoặc bằng 0" });
+                }
+
+                // Thêm sản phẩm vào database
+                _context.Products.Add(product);
+                await _context.SaveChangesAsync();
+
+                return CreatedAtAction(nameof(GetProduct), new { id = product.ProductID }, product);
+            }
+            catch (Exception ex)
+            {
+                // Log lỗi
+                Console.WriteLine($"Lỗi khi tạo sản phẩm: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+                
+                return StatusCode(500, new { message = $"Lỗi khi tạo sản phẩm: {ex.Message}" });
+            }
         }
 
         // PUT: api/Product/5
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateProduct(int id, Product product)
+        public async Task<IActionResult> UpdateProduct(int id, [FromBody] Product product)
         {
-            if (id != product.ProductID)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(product).State = EntityState.Modified;
-
             try
             {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!ProductExists(id))
+                if (id != product.ProductID)
                 {
-                    return NotFound();
+                    return BadRequest(new { message = "ID không khớp" });
                 }
-                else
-                {
-                    throw;
-                }
-            }
 
-            return NoContent();
+                // Kiểm tra sản phẩm tồn tại
+                var existingProduct = await _context.Products
+                    .Include(p => p.Category)
+                    .Include(p => p.Supplier)
+                    .FirstOrDefaultAsync(p => p.ProductID == id);
+
+                if (existingProduct == null)
+                {
+                    return NotFound(new { message = "Sản phẩm không tồn tại" });
+                }
+
+                // Kiểm tra CategoryID và SupplierID
+                var category = await _context.Categories.FindAsync(product.CategoryID);
+                if (category == null)
+                {
+                    return BadRequest(new { message = "Danh mục không tồn tại" });
+                }
+
+                var supplier = await _context.Suppliers.FindAsync(product.SupplierID);
+                if (supplier == null)
+                {
+                    return BadRequest(new { message = "Nhà cung cấp không tồn tại" });
+                }
+
+                // Cập nhật thông tin sản phẩm
+                existingProduct.ProductName = product.ProductName;
+                existingProduct.Unit = product.Unit;
+                existingProduct.StockQuantity = product.StockQuantity;
+                existingProduct.ReorderLevel = product.ReorderLevel;
+                existingProduct.CategoryID = product.CategoryID;
+                existingProduct.SupplierID = product.SupplierID;
+                existingProduct.Category = category;
+                existingProduct.Supplier = supplier;
+
+                // Kiểm tra dữ liệu đầu vào
+                if (string.IsNullOrEmpty(existingProduct.ProductName))
+                {
+                    return BadRequest(new { message = "Tên sản phẩm là bắt buộc" });
+                }
+
+                if (string.IsNullOrEmpty(existingProduct.Unit))
+                {
+                    return BadRequest(new { message = "Đơn vị tính là bắt buộc" });
+                }
+
+                if (existingProduct.StockQuantity < 0)
+                {
+                    return BadRequest(new { message = "Số lượng tồn kho phải lớn hơn hoặc bằng 0" });
+                }
+
+                if (existingProduct.ReorderLevel < 0)
+                {
+                    return BadRequest(new { message = "Số lượng tồn kho tối thiểu phải lớn hơn hoặc bằng 0" });
+                }
+
+                try
+                {
+                    await _context.SaveChangesAsync();
+                    return NoContent();
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    if (!ProductExists(id))
+                    {
+                        return NotFound(new { message = "Sản phẩm không tồn tại" });
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi cập nhật sản phẩm");
+                return StatusCode(500, new { message = "Lỗi khi cập nhật sản phẩm", details = ex.Message });
+            }
         }
 
         // DELETE: api/Product/5

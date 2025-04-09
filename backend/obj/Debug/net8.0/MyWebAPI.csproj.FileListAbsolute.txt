@@ -518,3 +518,4 @@ D:\MyWebAPI\backend\bin\Debug\net8.0\MailKit.dll
 D:\MyWebAPI\backend\bin\Debug\net8.0\MimeKit.dll
 D:\MyWebAPI\backend\bin\Debug\net8.0\System.Security.Cryptography.Pkcs.dll
 D:\MyWebAPI\backend\bin\Debug\net8.0\runtimes\win\lib\net8.0\System.Security.Cryptography.Pkcs.dll
+D:\MyWebAPI\backend\bin\Debug\net8.0\MyWebAPI.staticwebassets.runtime.json

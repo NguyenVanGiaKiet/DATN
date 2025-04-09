@@ -92,7 +92,7 @@ export default function CreateSupplierPage() {
         },
         body: JSON.stringify({
           ...data,
-          status: data.status === "Đang hợp tác" ? "cooperating" : "stopped"
+          status: data.status === "Đang hợp tác" ? "Đang hợp tác" : "Ngừng hợp tác"
         }),
       })
 

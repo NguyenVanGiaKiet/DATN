@@ -1,11 +1,19 @@
 {
   "Version": 1,
-  "Hash": "IfT6bnzdobL3y4/SwTztY2775GbYodHUQQz8zUw5z+U=",
+  "Hash": "dgZ3eQjn/OE6C2GHPmwigc/uEG17+t3WcSswutQJreM=",
   "Source": "MyWebAPI",
   "BasePath": "_content/MyWebAPI",
   "Mode": "Default",
   "ManifestType": "Build",
   "ReferencedProjectsConfiguration": [],
-  "DiscoveryPatterns": [],
+  "DiscoveryPatterns": [
+    {
+      "Name": "MyWebAPI\\wwwroot",
+      "Source": "MyWebAPI",
+      "ContentRoot": "D:\\MyWebAPI\\backend\\wwwroot\\",
+      "BasePath": "_content/MyWebAPI",
+      "Pattern": "**"
+    }
+  ],
   "Assets": []
 }

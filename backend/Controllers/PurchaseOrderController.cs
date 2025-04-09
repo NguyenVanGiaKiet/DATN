@@ -99,15 +99,15 @@ namespace MyWebAPI.Controllers
                         Quantity = detail.GetProperty("quantity").GetInt32(),
                         UnitPrice = detail.GetProperty("unitPrice").GetDecimal(),
                         TotalPrice = detail.GetProperty("totalPrice").GetDecimal(),
-                        ReceivedQuantity = 0,
-                        ReturnQuantity = 0
-                    });
-                }
+                    ReceivedQuantity = 0,
+                    ReturnQuantity = 0
+                });
+            }
 
                 purchaseOrder.PurchaseOrderDetails = details;
 
-                _context.PurchaseOrders.Add(purchaseOrder);
-                await _context.SaveChangesAsync();
+            _context.PurchaseOrders.Add(purchaseOrder);
+            await _context.SaveChangesAsync();
 
                 return Ok(new { 
                     message = $"Đơn hàng {purchaseOrder.PurchaseOrderID} đã được tạo thành công",
@@ -126,14 +126,14 @@ namespace MyWebAPI.Controllers
         {
             try
             {
-                var purchaseOrder = await _context.PurchaseOrders
-                    .Include(po => po.PurchaseOrderDetails)
+            var purchaseOrder = await _context.PurchaseOrders
+                .Include(po => po.PurchaseOrderDetails)
                     .ThenInclude(pod => pod.Product)
                     .Include(po => po.Supplier)
-                    .FirstOrDefaultAsync(po => po.PurchaseOrderID == id);
+                .FirstOrDefaultAsync(po => po.PurchaseOrderID == id);
 
-                if (purchaseOrder == null)
-                {
+            if (purchaseOrder == null)
+            {
                     return NotFound("Không tìm thấy đơn hàng");
                 }
 
@@ -303,7 +303,7 @@ namespace MyWebAPI.Controllers
             {
                 return NotFound();
             }
-
+            
             _context.PurchaseOrders.Remove(purchaseOrder);
             await _context.SaveChangesAsync();
 

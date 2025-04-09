@@ -204,13 +204,13 @@ namespace MyWebAPI.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<decimal>("ReorderLevel")
+                    b.Property<int>("ReorderLevel")
                         .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("int");
 
-                    b.Property<decimal>("StockQuantity")
+                    b.Property<int>("StockQuantity")
                         .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("int");
 
                     b.Property<int>("SupplierID")
                         .HasColumnType("int");

@@ -80,12 +80,19 @@ export default function PurchaseOrdersPage() {
   }
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    return new Intl.DateTimeFormat("vi-VN", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    }).format(date)
+    if (!dateString) return "N/A"
+    try {
+      const date = new Date(dateString)
+      if (isNaN(date.getTime())) return "N/A"
+      return new Intl.DateTimeFormat("vi-VN", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      }).format(date)
+    } catch (error) {
+      console.error("Lỗi định dạng ngày tháng:", error)
+      return "N/A"
+    }
   }
 
   const getStatusClass = (status: string) => {

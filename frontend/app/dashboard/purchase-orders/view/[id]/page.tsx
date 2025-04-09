@@ -6,14 +6,13 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, Download, Printer, Edit, CheckCircle, XCircle, AlertCircle, Mail } from "lucide-react"
+import { ArrowLeft, Download, Printer, Edit, CheckCircle2, XCircle, AlertCircle, Mail } from "lucide-react"
 import toast from "react-hot-toast"
 import Link from "next/link"
 import { format } from "date-fns"
 import { vi } from "date-fns/locale"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 
 interface PurchaseOrderDetail {
   productID: number
@@ -52,9 +51,6 @@ export default function ViewPurchaseOrderPage({ params }: { params: { id: string
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false)
   const [emailContent, setEmailContent] = useState("")
   const [isSendingEmail, setIsSendingEmail] = useState(false)
-  const [isConfirming, setIsConfirming] = useState(false)
-  const [isCancelling, setIsCancelling] = useState(false)
-  const [showCancelDialog, setShowCancelDialog] = useState(false)
 
   useEffect(() => {
     fetchOrder()
@@ -82,9 +78,9 @@ export default function ViewPurchaseOrderPage({ params }: { params: { id: string
       case "Đang xử lý":
         return <AlertCircle className="h-4 w-4 text-yellow-500" />
       case "Đã gửi email":
-        return <CheckCircle className="h-4 w-4 text-blue-500" />
+        return <CheckCircle2 className="h-4 w-4 text-blue-500" />
       case "Đã xác nhận":
-        return <CheckCircle className="h-4 w-4 text-green-500" />
+        return <CheckCircle2 className="h-4 w-4 text-green-500" />
       case "Đã hủy":
         return <XCircle className="h-4 w-4 text-red-500" />
       default:
@@ -154,69 +150,12 @@ Trân trọng,
 
       toast.success("Email đã được gửi thành công!")
       setIsEmailModalOpen(false)
-      fetchOrder()
+      fetchOrder() // Refresh để cập nhật trạng thái email
     } catch (error) {
       console.error("Lỗi khi gửi email:", error)
       toast.error("Không thể gửi email. Vui lòng thử lại sau.")
     } finally {
       setIsSendingEmail(false)
-    }
-  }
-
-  const handleConfirmOrder = async () => {
-    try {
-      setIsConfirming(true)
-      const response = await fetch(`http://localhost:5190/api/purchaseorder/${params.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...order,
-          status: "Đã xác nhận"
-        })
-      })
-
-      if (!response.ok) {
-        throw new Error("Không thể xác nhận đơn hàng")
-      }
-
-      toast.success("Đơn hàng đã được xác nhận thành công!")
-      fetchOrder()
-    } catch (error) {
-      console.error("Lỗi khi xác nhận đơn hàng:", error)
-      toast.error("Không thể xác nhận đơn hàng. Vui lòng thử lại sau.")
-    } finally {
-      setIsConfirming(false)
-    }
-  }
-
-  const handleCancelOrder = async () => {
-    try {
-      setIsCancelling(true)
-      const response = await fetch(`http://localhost:5190/api/purchaseorder/${params.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...order,
-          status: "Đã hủy"
-        })
-      })
-
-      if (!response.ok) {
-        throw new Error("Không thể hủy đơn hàng")
-      }
-
-      toast.success("Đơn hàng đã được hủy thành công!")
-      setShowCancelDialog(false)
-      fetchOrder()
-    } catch (error) {
-      console.error("Lỗi khi hủy đơn hàng:", error)
-      toast.error("Không thể hủy đơn hàng. Vui lòng thử lại sau.")
-    } finally {
-      setIsCancelling(false)
     }
   }
 
@@ -272,33 +211,14 @@ Trân trọng,
               Chỉnh sửa
             </Button>
           </Link>
-          <Button
-            variant={order?.status === "Đã gửi email" ? "outline" : "default"}
-            size="sm"
-            onClick={handleSendEmailClick}
-            disabled={isSendingEmail}
-          >
-            <Mail className="mr-2 h-4 w-4" />
-            {isSendingEmail ? "Đang gửi..." : order?.status === "Đã gửi email" ? "Gửi lại email" : "Gửi email"}
-          </Button>
-          <Button
-            variant={order?.status === "Đã gửi email" ? "default" : "outline"}
-            size="sm"
-            onClick={handleConfirmOrder}
-            disabled={isConfirming || order?.status !== "Đã gửi email"}
-          >
-            <CheckCircle className="mr-2 h-4 w-4" />
-            {isConfirming ? "Đang xác nhận..." : "Xác nhận đơn hàng"}
-          </Button>
-          <Button
+          <Button 
             variant="outline"
             size="sm"
-            onClick={() => setShowCancelDialog(true)}
-            disabled={isCancelling || order?.status === "Đã hủy" || order?.status === "Đã xác nhận"}
-            className="text-red-500 hover:text-red-700"
+            onClick={handleSendEmailClick}
+            disabled={isSendingEmail || order?.status === "Đã gửi email"}
           >
-            <XCircle className="mr-2 h-4 w-4" />
-            {isCancelling ? "Đang hủy..." : "Hủy đơn hàng"}
+            <Mail className="mr-2 h-4 w-4" />
+            {order?.status === "Đã gửi email" ? "Đã gửi email" : "Gửi email"}
           </Button>
         </div>
       </div>
@@ -454,34 +374,6 @@ Trân trọng,
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Xác nhận hủy đơn hàng</AlertDialogTitle>
-            <AlertDialogDescription>
-              Bạn có chắc chắn muốn hủy đơn hàng này? Hành động này không thể hoàn tác.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isCancelling}>Không, giữ lại</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleCancelOrder}
-              disabled={isCancelling}
-              className="bg-red-500 hover:bg-red-600"
-            >
-              {isCancelling ? (
-                <>
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent mr-2" />
-                  Đang hủy...
-                </>
-              ) : (
-                "Có, hủy đơn hàng"
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   )
 } 

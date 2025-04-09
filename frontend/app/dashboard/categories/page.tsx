@@ -7,18 +7,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { ChevronLeft, ChevronRight, Download, Plus, Search, SlidersHorizontal, Edit, Eye, Trash2 } from "lucide-react"
+import { ChevronLeft, ChevronRight, Plus, Search, Edit, Eye, AlertCircle } from "lucide-react"
 import { useRouter } from "next/navigation"
 import toast from "react-hot-toast"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
+import { Textarea } from "@/components/ui/textarea"
 
 interface Category {
   categoryID: number
@@ -35,8 +28,14 @@ export default function CategoriesPage() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null)
+  const [editForm, setEditForm] = useState({
+    categoryName: "",
+    description: "",
+    status: "Active"
+  })
   const itemsPerPage = 10
 
   useEffect(() => {
@@ -48,51 +47,73 @@ export default function CategoriesPage() {
       setLoading(true)
       const response = await fetch("http://localhost:5190/api/category")
       if (!response.ok) {
-        throw new Error("Không thể tải danh mục")
+        throw new Error("Không thể tải dữ liệu danh mục")
       }
       const data = await response.json()
       setCategories(data)
     } catch (error) {
       console.error("Lỗi khi tải danh mục:", error)
-      toast.error("Không thể tải danh mục. Vui lòng thử lại sau.")
+      toast.error("Không thể tải dữ liệu danh mục. Vui lòng thử lại sau.")
     } finally {
       setLoading(false)
     }
   }
 
-  const handleEdit = (categoryId: number) => {
-    router.push(`/dashboard/categories/edit/${categoryId}`)
+  const handleEdit = (category: Category) => {
+    setSelectedCategory(category)
+    setEditForm({
+      categoryName: category.categoryName,
+      description: category.description || "",
+      status: category.status
+    })
+    setIsEditDialogOpen(true)
   }
 
-  const handleView = (categoryId: number) => {
-    router.push(`/dashboard/categories/view/${categoryId}`)
-  }
-
-  const handleDelete = async () => {
+  const handleUpdate = async () => {
     if (!selectedCategory) return
 
     try {
       const response = await fetch(`http://localhost:5190/api/category/${selectedCategory.categoryID}`, {
-        method: "DELETE",
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(editForm),
       })
 
       if (!response.ok) {
-        throw new Error("Không thể xóa danh mục")
+        throw new Error("Không thể cập nhật danh mục")
       }
 
-      toast.success("Danh mục đã được xóa thành công")
-      setDeleteDialogOpen(false)
+      toast.success("Cập nhật danh mục thành công")
+      setIsEditDialogOpen(false)
       fetchCategories()
     } catch (error) {
-      console.error("Lỗi khi xóa danh mục:", error)
-      toast.error("Không thể xóa danh mục. Vui lòng thử lại sau.")
+      console.error("Lỗi khi cập nhật danh mục:", error)
+      toast.error("Không thể cập nhật danh mục. Vui lòng thử lại sau.")
     }
   }
 
-  const filteredCategories = categories.filter((category) =>
-    category.categoryName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    category.description.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const getStatusClass = (status: string) => {
+    switch (status) {
+      case "Active":
+        return "bg-green-100 text-green-800 border-green-300 hover:bg-green-200"
+      case "Inactive":
+        return "bg-red-100 text-red-800 border-red-300 hover:bg-red-200"
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-300 hover:bg-gray-200"
+    }
+  }
+
+  const filteredCategories = categories.filter((category) => {
+    const matchesSearch = 
+      category.categoryName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      category.description?.toLowerCase().includes(searchTerm.toLowerCase())
+
+    const matchesStatus = statusFilter === "all" || category.status === statusFilter
+
+    return matchesSearch && matchesStatus
+  })
 
   const totalPages = Math.ceil(filteredCategories.length / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
@@ -101,19 +122,19 @@ export default function CategoriesPage() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">Danh Mục Sản Phẩm</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Quản lý Danh mục</h1>
         <Link href="/dashboard/categories/create">
           <Button>
             <Plus className="mr-2 h-4 w-4" />
-            Thêm Danh Mục
+            Thêm Danh mục
           </Button>
         </Link>
       </div>
 
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle>Danh Sách Danh Mục</CardTitle>
-          <CardDescription>Quản lý và theo dõi tất cả danh mục sản phẩm trong hệ thống</CardDescription>
+          <CardTitle>Danh Sách Danh mục</CardTitle>
+          <CardDescription>Quản lý và theo dõi tất cả danh mục trong hệ thống</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col gap-4 mb-4">
@@ -136,15 +157,13 @@ export default function CategoriesPage() {
                   <TableHead>Tên danh mục</TableHead>
                   <TableHead>Mô tả</TableHead>
                   <TableHead>Trạng thái</TableHead>
-                  <TableHead>Ngày tạo</TableHead>
-                  <TableHead>Ngày cập nhật</TableHead>
                   <TableHead>Thao tác</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8">
+                    <TableCell colSpan={5} className="text-center py-8">
                       <div className="flex flex-col items-center gap-2">
                         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
                         <p className="text-muted-foreground">Đang tải dữ liệu...</p>
@@ -153,7 +172,7 @@ export default function CategoriesPage() {
                   </TableRow>
                 ) : paginatedCategories.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8">
+                    <TableCell colSpan={5} className="text-center py-8">
                       Không tìm thấy danh mục nào
                     </TableCell>
                   </TableRow>
@@ -162,46 +181,21 @@ export default function CategoriesPage() {
                     <TableRow key={category.categoryID}>
                       <TableCell className="font-medium">{category.categoryID}</TableCell>
                       <TableCell>{category.categoryName}</TableCell>
-                      <TableCell>{category.description}</TableCell>
+                      <TableCell>{category.description || "Không có mô tả"}</TableCell>
                       <TableCell>
-                        <Badge variant="outline" className={
-                          category.status === "Hoạt động" 
-                            ? "bg-green-100 text-green-800 border-green-300 hover:bg-green-200"
-                            : "bg-red-100 text-red-800 border-red-300 hover:bg-red-200"
-                        }>
+                        <Badge variant="outline" className={getStatusClass(category.status)}>
                           {category.status}
                         </Badge>
                       </TableCell>
-                      <TableCell>{new Date(category.createdAt).toLocaleDateString("vi-VN")}</TableCell>
-                      <TableCell>{new Date(category.updatedAt).toLocaleDateString("vi-VN")}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleView(category.categoryID)}
-                            className="h-8 w-8"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleEdit(category.categoryID)}
+                            onClick={() => handleEdit(category)}
                             className="h-8 w-8"
                           >
                             <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => {
-                              setSelectedCategory(category)
-                              setDeleteDialogOpen(true)
-                            }}
-                            className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-100"
-                          >
-                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
                       </TableCell>
@@ -240,21 +234,55 @@ export default function CategoriesPage() {
         </CardContent>
       </Card>
 
-      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Xác nhận xóa danh mục</DialogTitle>
+            <DialogTitle>Chỉnh sửa Danh mục</DialogTitle>
             <DialogDescription>
-              Bạn có chắc chắn muốn xóa danh mục "{selectedCategory?.categoryName}"? Hành động này không thể hoàn tác.
+              Cập nhật thông tin danh mục sản phẩm
             </DialogDescription>
           </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <label htmlFor="categoryName" className="text-sm font-medium">
+                Tên danh mục
+              </label>
+              <Input
+                id="categoryName"
+                value={editForm.categoryName}
+                onChange={(e) => setEditForm({ ...editForm, categoryName: e.target.value })}
+              />
+            </div>
+            <div className="grid gap-2">
+              <label htmlFor="description" className="text-sm font-medium">
+                Mô tả
+              </label>
+              <Textarea
+                id="description"
+                value={editForm.description}
+                onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+              />
+            </div>
+            <div className="grid gap-2">
+              <label htmlFor="status" className="text-sm font-medium">
+                Trạng thái
+              </label>
+              <select
+                id="status"
+                value={editForm.status}
+                onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="Active">Hoạt động</option>
+                <option value="Inactive">Không hoạt động</option>
+              </select>
+            </div>
+          </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
               Hủy
             </Button>
-            <Button variant="destructive" onClick={handleDelete}>
-              Xóa
-            </Button>
+            <Button onClick={handleUpdate}>Lưu thay đổi</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
