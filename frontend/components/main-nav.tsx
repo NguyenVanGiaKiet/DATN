@@ -40,6 +40,12 @@ export function MainNav({ className, ...props }: MainNavProps) {
       active: pathname?.startsWith("/dashboard/products"),
     },
     {
+      href: "/dashboard/goods-received",
+      label: t("goodsReceived"),
+      icon: Package,
+      active: pathname?.startsWith("/dashboard/goods-received"),
+    },
+    {
       href: "/dashboard/payments",
       label: t("payments"),
       icon: CreditCard,
@@ -56,13 +62,7 @@ export function MainNav({ className, ...props }: MainNavProps) {
       label: t("reports"),
       icon: BarChart3,
       active: pathname?.startsWith("/dashboard/reports"),
-    },
-    {
-      href: "/dashboard/settings",
-      label: t("settings"),
-      icon: Settings,
-      active: pathname?.startsWith("/dashboard/settings"),
-    },
+    }
   ]
 
   return (

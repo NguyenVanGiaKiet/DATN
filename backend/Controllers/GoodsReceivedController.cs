@@ -35,6 +35,10 @@ namespace MyWebAPI.Controllers
         {
             var goodsReceived = await _context.GoodsReceived
                 .Include(gr => gr.PurchaseOrder)
+                    .ThenInclude(po => po.Supplier)
+                .Include(gr => gr.PurchaseOrder)
+                    .ThenInclude(po => po.PurchaseOrderDetails)
+                        .ThenInclude(pod => pod.Product)
                 .FirstOrDefaultAsync(gr => gr.GoodsReceivedID == id);
 
             if (goodsReceived == null)

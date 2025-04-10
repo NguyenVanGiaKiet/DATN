@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { DatePicker } from "@/components/date-picker"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { ArrowLeft, Plus, Trash2, Loader2, Save, Mail, CheckCircle, XCircle } from "lucide-react"
+import { ArrowLeft, Plus, Trash2, Loader2, Save, Mail, CheckCircle, XCircle, Package, FileText } from "lucide-react"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import toast from "react-hot-toast"
 import { Badge } from "@/components/ui/badge"
@@ -126,6 +126,8 @@ export default function EditPurchaseOrderPage({ params }: { params: { id: string
   const [isConfirming, setIsConfirming] = useState(false)
   const [isCancelling, setIsCancelling] = useState(false)
   const [showCancelDialog, setShowCancelDialog] = useState(false)
+  const [isReceiving, setIsReceiving] = useState(false)
+  const [isCreatingInvoice, setIsCreatingInvoice] = useState(false)
 
   // Khởi tạo form
   const form = useForm<FormValues>({
@@ -534,6 +536,40 @@ Trân trọng,
     }
   }
 
+  const handleReceiveProducts = async () => {
+    router.push(`/dashboard/purchase-orders/receive/${params.id}`)
+  }
+
+  const handleCreateInvoice = async () => {
+    try {
+      setIsCreatingInvoice(true)
+      const response = await fetch(`http://localhost:5190/api/purchaseorder/${params.id}/create-invoice`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error("Không thể tạo hóa đơn")
+      }
+
+      toast.success("Hóa đơn đã được tạo thành công!")
+      
+      // Tải lại dữ liệu đơn hàng
+      const orderResponse = await fetch(`http://localhost:5190/api/purchaseorder/${params.id}`)
+      if (orderResponse.ok) {
+        const orderData = await orderResponse.json()
+        setPurchaseOrder(orderData)
+      }
+    } catch (error) {
+      console.error("Lỗi khi tạo hóa đơn:", error)
+      toast.error("Không thể tạo hóa đơn. Vui lòng thử lại sau.")
+    } finally {
+      setIsCreatingInvoice(false)
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -558,26 +594,49 @@ Trân trọng,
           )}
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant={purchaseOrder?.status === "Đã gửi email" ? "outline" : "default"}
-            onClick={handleSendEmailClick}
-            disabled={isSendingEmail}
-          >
-            <Mail className="mr-2 h-4 w-4" />
-            {isSendingEmail ? "Đang gửi..." : purchaseOrder?.status === "Đã gửi email" ? "Gửi lại email" : "Gửi email"}
-          </Button>
-          <Button
-            variant={purchaseOrder?.status === "Đã gửi email" ? "default" : "outline"}
-            onClick={handleConfirmOrder}
-            disabled={isConfirming || purchaseOrder?.status !== "Đã gửi email"}
-          >
-            <CheckCircle className="mr-2 h-4 w-4" />
-            {isConfirming ? "Đang xác nhận..." : "Xác nhận đơn hàng"}
-          </Button>
+          {purchaseOrder?.status !== "Đã xác nhận" && (
+            <Button
+              variant={purchaseOrder?.status === "Đã gửi email" ? "outline" : "default"}
+              onClick={handleSendEmailClick}
+              disabled={isSendingEmail || purchaseOrder?.status === "Đã hủy"}
+            >
+              <Mail className="mr-2 h-4 w-4" />
+              {isSendingEmail ? "Đang gửi..." : purchaseOrder?.status === "Đã gửi email" ? "Gửi lại email" : "Gửi email"}
+            </Button>
+          )}
+          {purchaseOrder?.status === "Đã xác nhận" ? (
+            <>
+              <Button
+                variant="default"
+                onClick={handleReceiveProducts}
+                disabled={isReceiving}
+              >
+                <Package className="mr-2 h-4 w-4" />
+                {isReceiving ? "Đang nhận..." : "Nhận sản phẩm"}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleCreateInvoice}
+                disabled={isCreatingInvoice}
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                {isCreatingInvoice ? "Đang tạo..." : "Tạo hóa đơn"}
+              </Button>
+            </>
+          ) : (
+            <Button
+              variant={purchaseOrder?.status === "Đã gửi email" ? "default" : "outline"}
+              onClick={handleConfirmOrder}
+              disabled={isConfirming || purchaseOrder?.status === "Đã xác nhận" || purchaseOrder?.status === "Đã hủy"}
+            >
+              <CheckCircle className="mr-2 h-4 w-4" />
+              {isConfirming ? "Đang xác nhận..." : "Xác nhận đơn hàng"}
+            </Button>
+          )}
           <Button
             variant="outline"
             onClick={() => setShowCancelDialog(true)}
-            disabled={isCancelling || purchaseOrder?.status === "Đã hủy" || purchaseOrder?.status === "Đã xác nhận"}
+            disabled={isCancelling || purchaseOrder?.status === "Đã hủy" }
             className="text-red-500 hover:text-red-700"
           >
             <XCircle className="mr-2 h-4 w-4" />

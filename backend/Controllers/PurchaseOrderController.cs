@@ -331,5 +331,55 @@ namespace MyWebAPI.Controllers
             var lastNumber = int.Parse(lastOrder.PurchaseOrderID.Split('-').Last());
             return $"PO-{currentYear}-{(lastNumber + 1).ToString("D4")}";
         }
+
+        [HttpPut("{id}/receive-products")]
+        public async Task<IActionResult> ReceiveProducts(string id, [FromBody] JsonElement receiveData)
+        {
+            try
+            {
+                var purchaseOrder = await _context.PurchaseOrders
+                    .Include(po => po.PurchaseOrderDetails)
+                        .ThenInclude(pod => pod.Product)
+                    .FirstOrDefaultAsync(po => po.PurchaseOrderID == id);
+
+                if (purchaseOrder == null)
+                {
+                    return NotFound("Không tìm thấy đơn hàng");
+                }
+
+                // Cập nhật số lượng nhận cho từng sản phẩm
+                var receivedQuantities = receiveData.GetProperty("receivedQuantities");
+                foreach (var detail in purchaseOrder.PurchaseOrderDetails)
+                {
+                    if (receivedQuantities.TryGetProperty(detail.PODetailID.ToString(), out var quantityElement))
+                    {
+                        int receivedQty = quantityElement.GetInt32();
+                        if (receivedQty < 0 || receivedQty > detail.Quantity)
+                        {
+                            return BadRequest($"Số lượng nhận không hợp lệ cho sản phẩm {detail.Product.ProductName}");
+                        }
+                        detail.ReceivedQuantity = receivedQty;
+
+                        // Cập nhật tồn kho sản phẩm
+                        var product = await _context.Products.FindAsync(detail.ProductID);
+                        if (product != null)
+                        {
+                            product.StockQuantity += receivedQty;
+                        }
+                    }
+                }
+
+                // Cập nhật trạng thái đơn hàng
+                purchaseOrder.Status = "Đã nhận hàng";
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new { message = "Đã cập nhật số lượng nhận và tồn kho thành công" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = $"Lỗi khi cập nhật: {ex.Message}" });
+            }
+        }
     }
 }

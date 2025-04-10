@@ -161,7 +161,7 @@ export default function PurchaseOrdersPage() {
           <CardDescription>Quản lý và theo dõi tất cả đơn đặt hàng trong hệ thống</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col gap-4 mb-4">
+          <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2 w-full max-w-sm relative">
               <Search className="h-4 w-4 text-muted-foreground absolute ml-2" />
               <Input 
@@ -171,38 +171,37 @@ export default function PurchaseOrdersPage() {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            
-            <div className="flex items-center gap-4">
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <div className="flex items-center gap-2">
+              <Select
+                value={statusFilter}
+                onValueChange={setStatusFilter}
+              >
                 <SelectTrigger className="w-[180px]">
                   <SelectValue placeholder="Lọc theo trạng thái" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tất cả trạng thái</SelectItem>
-                  <SelectItem value="Đang xử lý">Đang xử lý</SelectItem>
-                  <SelectItem value="Đã gửi email">Đã gửi email</SelectItem>
-                  <SelectItem value="Đã xác nhận">Đã xác nhận</SelectItem>
-                  <SelectItem value="Đang giao hàng">Đang giao hàng</SelectItem>
-                  <SelectItem value="Đã nhận hàng">Đã nhận hàng</SelectItem>
-                  <SelectItem value="Đã trả hàng">Đã trả hàng</SelectItem>
+                  <SelectItem value="Đang chờ duyệt">Đang chờ duyệt</SelectItem>
+                  <SelectItem value="Đã duyệt">Đã duyệt</SelectItem>
                   <SelectItem value="Đã hủy">Đã hủy</SelectItem>
                 </SelectContent>
               </Select>
-
-              <Select value={supplierFilter} onValueChange={setSupplierFilter}>
+              <Select
+                value={supplierFilter}
+                onValueChange={setSupplierFilter}
+              >
                 <SelectTrigger className="w-[180px]">
                   <SelectValue placeholder="Lọc theo nhà cung cấp" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tất cả nhà cung cấp</SelectItem>
-                  {uniqueSuppliers.map(supplier => (
+                  {uniqueSuppliers.map((supplier) => (
                     <SelectItem key={supplier.id} value={supplier.id}>
                       {supplier.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className="w-[180px] justify-start text-left font-normal">
@@ -219,14 +218,18 @@ export default function PurchaseOrdersPage() {
                   />
                 </PopoverContent>
               </Popover>
-
-              <Button variant="outline" size="sm" onClick={() => {
-                setStatusFilter("all")
-                setSupplierFilter("all")
-                setDateFilter(undefined)
-                setSearchTerm("")
-              }}>
-                <Filter className="mr-2 h-4 w-4" />
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => {
+                  setStatusFilter("all")
+                  setSupplierFilter("all")
+                  setDateFilter(undefined)
+                  setSearchTerm("")
+                }}
+                className="flex items-center gap-2"
+              >
+                <SlidersHorizontal className="h-4 w-4" />
                 Xóa bộ lọc
               </Button>
             </div>
@@ -244,7 +247,6 @@ export default function PurchaseOrdersPage() {
                   <TableHead>Số lượng sản phẩm</TableHead>
                   <TableHead>Trạng thái</TableHead>
                   <TableHead>Người phê duyệt</TableHead>
-                  <TableHead>Thao tác</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -265,46 +267,34 @@ export default function PurchaseOrdersPage() {
                   </TableRow>
                 ) : (
                   paginatedOrders.map((order) => (
-                    <TableRow key={order.purchaseOrderID}>
+                    <TableRow 
+                      key={order.purchaseOrderID} 
+                      className="hover:bg-muted/50 cursor-pointer"
+                      onClick={() => router.push(`/dashboard/purchase-orders/edit/${order.purchaseOrderID}`)}
+                    >
                       <TableCell className="font-medium">{order.purchaseOrderID}</TableCell>
                       <TableCell>{order.supplier.supplierName}</TableCell>
-                      <TableCell>{formatDate(order.orderDate)}</TableCell>
-                      <TableCell>{formatDate(order.expectedDeliveryDate)}</TableCell>
                       <TableCell>
-                        {new Intl.NumberFormat("vi-VN", {
+                        {order.orderDate && format(new Date(order.orderDate), "dd/MM/yyyy", { locale: vi })}
+                      </TableCell>
+                      <TableCell>
+                        {order.expectedDeliveryDate && format(new Date(order.expectedDeliveryDate), "dd/MM/yyyy", { locale: vi })}
+                      </TableCell>
+                      <TableCell>
+                        {order.totalAmount.toLocaleString("vi-VN", {
                           style: "currency",
-                          currency: "VND",
-                        }).format(order.totalAmount)}
+                          currency: "VND"
+                        })}
                       </TableCell>
                       <TableCell>
                         {order.purchaseOrderDetails.reduce((total, item) => total + item.quantity, 0)}
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline" className={getStatusClass(order.status)}>
+                        <Badge className={getStatusClass(order.status)}>
                           {order.status}
                         </Badge>
                       </TableCell>
                       <TableCell>{order.approvedBy || "-"}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleView(order.purchaseOrderID)}
-                            className="h-8 w-8"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleEdit(order.purchaseOrderID)}
-                            className="h-8 w-8"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
                     </TableRow>
                   ))
                 )}

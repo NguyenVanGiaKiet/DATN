@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using MyWebAPI.Data;
 using MyWebAPI.Models;
 using Microsoft.Extensions.Logging;
+using System.Text.Json;
 
 namespace MyWebAPI.Controllers
 {
@@ -239,6 +240,46 @@ namespace MyWebAPI.Controllers
             await _context.SaveChangesAsync();
 
             return NoContent();
+        }
+
+        [HttpPut("{id}/update-stock")]
+        public async Task<IActionResult> UpdateStock(int id, [FromBody] JsonElement stockData)
+        {
+            try
+            {
+                var product = await _context.Products.FindAsync(id);
+                if (product == null)
+                {
+                    return NotFound(new { message = "Không tìm thấy sản phẩm" });
+                }
+
+                int quantity = stockData.GetProperty("quantity").GetInt32();
+                string type = stockData.GetProperty("type").GetString();
+
+                if (type == "in")
+                {
+                    product.StockQuantity += quantity;
+                }
+                else if (type == "out")
+                {
+                    if (product.StockQuantity < quantity)
+                    {
+                        return BadRequest(new { message = "Số lượng tồn kho không đủ" });
+                    }
+                    product.StockQuantity -= quantity;
+                }
+                else
+                {
+                    return BadRequest(new { message = "Loại cập nhật không hợp lệ" });
+                }
+
+                await _context.SaveChangesAsync();
+                return Ok(new { message = "Đã cập nhật tồn kho thành công" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = $"Lỗi khi cập nhật tồn kho: {ex.Message}" });
+            }
         }
 
         private bool ProductExists(int id)

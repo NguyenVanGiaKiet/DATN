@@ -47,7 +47,7 @@ export default function SuppliersPage() {
   const [statusFilter, setStatusFilter] = useState("all")
   const [ratingFilter, setRatingFilter] = useState("all")
   const [deliveryTimeFilter, setDeliveryTimeFilter] = useState("all")
-  const itemsPerPage = 10
+  const itemsPerPage = 10 // 2 hàng x 5 card
 
   // Hàm xóa tất cả bộ lọc
   const clearAllFilters = () => {
@@ -195,74 +195,40 @@ export default function SuppliersPage() {
           </div>
 
           {/* Hiển thị danh sách nhà cung cấp dạng card */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            {loading ? (
-              <div className="col-span-full text-center py-8">
-                Đang tải danh sách nhà cung cấp...
-              </div>
-            ) : paginatedSuppliers.length === 0 ? (
-              <div className="col-span-full text-center py-8">
-                Không tìm thấy nhà cung cấp nào
-              </div>
-            ) : (
-              paginatedSuppliers.map((supplier) => (
-                <Card key={supplier.supplierID} className="hover:shadow-md transition-shadow">
-                  <CardContent className="p-4">
-                    <div className="flex flex-col gap-2">
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-semibold">{supplier.supplierName}</h3>
-                        <Badge 
-                          variant="outline" 
-                          className={getStatusClass(supplier.status)}
-                        >
-                          {supplier.status}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <Phone className="h-4 w-4" />
-                        {supplier.phone}
-                      </div>
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <Mail className="h-4 w-4" />
-                        {supplier.email}
-                      </div>
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <MapPin className="h-4 w-4" />
-                        {supplier.address}
-                      </div>
-                      <div className="flex items-center justify-between mt-2">
-                        <div className="flex">
-                          {[...Array(5)].map((_, index) => (
-                            <Star 
-                              key={index} 
-                              className={`h-4 w-4 ${index < supplier.rating ? "fill-primary text-primary" : "text-muted-foreground"}`} 
-                            />
-                          ))}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => router.push(`/dashboard/suppliers/view/${supplier.supplierID}`)}
-                          >
-                            <Eye className="h-4 w-4" />
-                            <span className="sr-only">Xem chi tiết</span>
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => router.push(`/dashboard/suppliers/edit/${supplier.supplierID}`)}
-                          >
-                            <Edit className="h-4 w-4" />
-                            <span className="sr-only">Sửa</span>
-                          </Button>
-                        </div>
-                      </div>
+          <div className="grid grid-cols-5 gap-4">
+            {paginatedSuppliers.map((supplier) => (
+              <Card 
+                key={supplier.supplierID} 
+                className="hover:shadow-lg hover:scale-[1.02] transition-all duration-200 cursor-pointer"
+                onClick={() => router.push(`/dashboard/suppliers/edit/${supplier.supplierID}`)}
+              >
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <span className="text-sm">{supplier.supplierName}</span>
+                    <Badge variant="outline" className={getStatusClass(supplier.status)}>
+                      {supplier.status}
+                    </Badge>
+                  </CardTitle>
+                  <CardDescription className="text-xs">{supplier.contactPerson}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <Phone className="h-3 w-3 text-muted-foreground" />
+                      <span className="text-xs">{supplier.phone}</span>
                     </div>
-                  </CardContent>
-                </Card>
-              ))
-            )}
+                    <div className="flex items-center gap-2">
+                      <Mail className="h-3 w-3 text-muted-foreground" />
+                      <span className="text-xs">{supplier.email}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-3 w-3 text-muted-foreground" />
+                      <span className="text-xs">{supplier.address}</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
 
           <div className="flex items-center justify-between space-x-2 py-4">

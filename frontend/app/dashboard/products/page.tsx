@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { ChevronLeft, ChevronRight, Download, Plus, Search, SlidersHorizontal, Edit, Eye, Package, Building2, Package2 } from "lucide-react"
+import { ChevronLeft, ChevronRight, Download, Plus, Search, SlidersHorizontal, Edit, Eye, Package, Building2, Package2, DollarSign, Box } from "lucide-react"
 import { useRouter } from "next/navigation"
 import toast from "react-hot-toast"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -27,6 +27,9 @@ interface Product {
   supplier: {
     supplierName: string
   }
+  status: string
+  unitPrice: number
+  quantityInStock: number
 }
 
 export default function ProductsPage() {
@@ -84,9 +87,7 @@ export default function ProductsPage() {
   const filteredProducts = products.filter(product => {
     const matchesSearch = 
       product.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.category.categoryName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.supplier.supplierName.toLowerCase().includes(searchTerm.toLowerCase())
+      product.description.toLowerCase().includes(searchTerm.toLowerCase())
     
     const matchesCategory = categoryFilter === "all" || product.categoryID.toString() === categoryFilter
     const matchesSupplier = supplierFilter === "all" || product.supplierID.toString() === supplierFilter
@@ -213,7 +214,11 @@ export default function ProductsPage() {
               </div>
             ) : (
               paginatedProducts.map((product) => (
-                <Card key={product.productID} className="hover:shadow-md transition-shadow">
+                <Card 
+                  key={product.productID} 
+                  className="hover:shadow-lg hover:scale-[1.02] transition-all duration-200 cursor-pointer"
+                  onClick={() => router.push(`/dashboard/products/edit/${product.productID}`)}
+                >
                   <CardContent className="p-4">
                     <div className="flex flex-col gap-2">
                       <div className="flex items-center justify-between">
@@ -237,26 +242,6 @@ export default function ProductsPage() {
                       <div className="flex items-center gap-1 text-sm text-muted-foreground">
                         <Package2 className="h-4 w-4" />
                         Mức tồn kho tối thiểu: {product.reorderLevel} {product.unit}
-                      </div>
-                      <div className="flex items-center justify-end mt-2">
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => router.push(`/dashboard/products/view/${product.productID}`)}
-                          >
-                            <Eye className="h-4 w-4" />
-                            <span className="sr-only">Xem chi tiết</span>
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => router.push(`/dashboard/products/edit/${product.productID}`)}
-                          >
-                            <Edit className="h-4 w-4" />
-                            <span className="sr-only">Sửa</span>
-                          </Button>
-                        </div>
                       </div>
                     </div>
                   </CardContent>
