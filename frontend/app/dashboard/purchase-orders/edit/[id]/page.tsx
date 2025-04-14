@@ -63,8 +63,8 @@ interface PurchaseOrder {
   purchaseOrderID: string
   supplierID: number
   supplier: {
-    supplierID: number
-    supplierName: string
+  supplierID: number
+  supplierName: string
   }
   orderDate: string
   expectedDeliveryDate: string
@@ -128,6 +128,16 @@ export default function EditPurchaseOrderPage({ params }: { params: { id: string
   const [showCancelDialog, setShowCancelDialog] = useState(false)
   const [isReceiving, setIsReceiving] = useState(false)
   const [isCreatingInvoice, setIsCreatingInvoice] = useState(false)
+  const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null)
+  const [selectedProducts, setSelectedProducts] = useState<Product[]>([])
+  const [quantities, setQuantities] = useState<{ [key: number]: number }>({})
+  const [unitPrices, setUnitPrices] = useState<{ [key: number]: number }>({})
+  const [receivedQuantities, setReceivedQuantities] = useState<{ [key: number]: number }>({})
+  const [returnQuantities, setReturnQuantities] = useState<{ [key: number]: number }>({})
+  const [showAddProductDialog, setShowAddProductDialog] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [showReturnDialog, setShowReturnDialog] = useState(false)
+  const [showReceiveDialog, setShowReceiveDialog] = useState(false)
 
   // Khởi tạo form
   const form = useForm<FormValues>({
@@ -161,6 +171,7 @@ export default function EditPurchaseOrderPage({ params }: { params: { id: string
         const orderData = await orderResponse.json()
         console.log("Order Data:", orderData)
         setPurchaseOrder(orderData)
+        setSelectedSupplier(orderData.supplier)
 
         // Lấy dữ liệu nhà cung cấp
         const suppliersResponse = await fetch("http://localhost:5190/api/supplier")
@@ -202,6 +213,46 @@ export default function EditPurchaseOrderPage({ params }: { params: { id: string
           })
 
           setTotalAmount(orderData.totalAmount)
+
+          // Khởi tạo số lượng và đơn giá cho mỗi sản phẩm
+          const initialQuantities = orderData.purchaseOrderDetails.reduce((acc: { [key: number]: number }, item: PurchaseOrderItem) => {
+            acc[item.productID] = item.quantity
+            return acc
+          }, {})
+          setQuantities(initialQuantities)
+
+          const initialUnitPrices = orderData.purchaseOrderDetails.reduce((acc: { [key: number]: number }, item: PurchaseOrderItem) => {
+            acc[item.productID] = item.unitPrice
+            return acc
+          }, {})
+          setUnitPrices(initialUnitPrices)
+
+          const initialReceivedQuantities = orderData.purchaseOrderDetails.reduce((acc: { [key: number]: number }, item: PurchaseOrderItem) => {
+            acc[item.productID] = item.receivedQuantity || 0
+            return acc
+          }, {})
+          setReceivedQuantities(initialReceivedQuantities)
+
+          const initialReturnQuantities = orderData.purchaseOrderDetails.reduce((acc: { [key: number]: number }, item: PurchaseOrderItem) => {
+            acc[item.productID] = item.returnQuantity || 0
+            return acc
+          }, {})
+          setReturnQuantities(initialReturnQuantities)
+
+          // Đọc số lượng đã nhận từ URL
+          const searchParams = new URLSearchParams(window.location.search)
+          const receivedParams = searchParams.getAll('received')
+          if (receivedParams.length > 0) {
+            const newReceivedQuantities = { ...initialReceivedQuantities }
+            receivedParams.forEach(param => {
+              const [poDetailID, quantity] = param.split(':')
+              const detail = orderData.purchaseOrderDetails.find((d: PurchaseOrderItem) => d.poDetailID === parseInt(poDetailID))
+              if (detail) {
+                newReceivedQuantities[detail.productID] = (newReceivedQuantities[detail.productID] || 0) + parseInt(quantity)
+              }
+            })
+            setReceivedQuantities(newReceivedQuantities)
+          }
         }
       } catch (error) {
         console.error("Lỗi khi tải dữ liệu:", error)
@@ -261,9 +312,9 @@ export default function EditPurchaseOrderPage({ params }: { params: { id: string
           poDetailID: item.id ? parseInt(item.id) : 0,
           purchaseOrderID: params.id,
           productID: parseInt(item.productID),
-          quantity: item.quantity || 0,
-          unitPrice: item.unitPrice || 0,
-          totalPrice: (item.quantity || 0) * (item.unitPrice || 0),
+        quantity: item.quantity || 0,
+        unitPrice: item.unitPrice || 0,
+        totalPrice: (item.quantity || 0) * (item.unitPrice || 0),
           receivedQuantity: existingDetail?.receivedQuantity || 0,
           returnQuantity: existingDetail?.returnQuantity || 0
         }
@@ -310,9 +361,9 @@ export default function EditPurchaseOrderPage({ params }: { params: { id: string
       // Hiển thị thông báo thành công
       toast.success(`Đơn hàng ${params.id} đã được cập nhật thành công với tổng giá trị ${totalAmount.toLocaleString('vi-VN')} VND.`, {
         duration: 5000,
-      })
+        })
 
-      setHasChanges(false)
+        setHasChanges(false)
       
       // Đợi 1.5 giây để người dùng thấy thông báo trước khi chuyển trang
       setTimeout(() => {
@@ -584,54 +635,59 @@ Trân trọng,
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" size="icon" className="h-9 w-9 rounded-full hover:bg-muted/50" onClick={handleCancel}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <h1 className="text-3xl font-bold tracking-tight">Chỉnh sửa đơn hàng</h1>
-          {purchaseOrder && (
+      <div className="flex items-center gap-4">
+        <Button variant="outline" size="icon" className="h-9 w-9 rounded-full hover:bg-muted/50" onClick={handleCancel}>
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <h1 className="text-3xl font-bold tracking-tight">Chỉnh sửa đơn hàng</h1>
+        {purchaseOrder && (
             <Badge className={getStatusClass(purchaseOrder.status)}>{purchaseOrder.status}</Badge>
           )}
         </div>
         <div className="flex items-center gap-2">
-          {purchaseOrder?.status !== "Đã xác nhận" && (
+          {purchaseOrder?.status === "Đã nhận hàng" ? (
             <Button
-              variant={purchaseOrder?.status === "Đã gửi email" ? "outline" : "default"}
-              onClick={handleSendEmailClick}
-              disabled={isSendingEmail || purchaseOrder?.status === "Đã hủy"}
+              variant="default"
+              onClick={handleCreateInvoice}
+              disabled={isCreatingInvoice}
             >
-              <Mail className="mr-2 h-4 w-4" />
-              {isSendingEmail ? "Đang gửi..." : purchaseOrder?.status === "Đã gửi email" ? "Gửi lại email" : "Gửi email"}
+              <FileText className="mr-2 h-4 w-4" />
+              {isCreatingInvoice ? "Đang tạo..." : "Tạo hóa đơn"}
             </Button>
-          )}
-          {purchaseOrder?.status === "Đã xác nhận" ? (
-            <>
-              <Button
-                variant="default"
-                onClick={handleReceiveProducts}
-                disabled={isReceiving}
-              >
-                <Package className="mr-2 h-4 w-4" />
-                {isReceiving ? "Đang nhận..." : "Nhận sản phẩm"}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={handleCreateInvoice}
-                disabled={isCreatingInvoice}
-              >
-                <FileText className="mr-2 h-4 w-4" />
-                {isCreatingInvoice ? "Đang tạo..." : "Tạo hóa đơn"}
-              </Button>
-            </>
           ) : (
-            <Button
-              variant={purchaseOrder?.status === "Đã gửi email" ? "default" : "outline"}
-              onClick={handleConfirmOrder}
-              disabled={isConfirming || purchaseOrder?.status === "Đã xác nhận" || purchaseOrder?.status === "Đã hủy"}
-            >
-              <CheckCircle className="mr-2 h-4 w-4" />
-              {isConfirming ? "Đang xác nhận..." : "Xác nhận đơn hàng"}
-            </Button>
+            <>
+              {purchaseOrder?.status !== "Đã xác nhận" && (
+                <Button
+                  variant={purchaseOrder?.status === "Đã gửi email" ? "outline" : "default"}
+                  onClick={handleSendEmailClick}
+                  disabled={isSendingEmail || purchaseOrder?.status === "Đã hủy"}
+                >
+                  <Mail className="mr-2 h-4 w-4" />
+                  {isSendingEmail ? "Đang gửi..." : purchaseOrder?.status === "Đã gửi email" ? "Gửi lại email" : "Gửi email"}
+                </Button>
+              )}
+              {purchaseOrder?.status === "Đã xác nhận" ? (
+                <>
+                  <Button
+                    variant="default"
+                    onClick={handleReceiveProducts}
+                    disabled={isReceiving}
+                  >
+                    <Package className="mr-2 h-4 w-4" />
+                    {isReceiving ? "Đang nhận..." : "Nhận sản phẩm"}
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  variant={purchaseOrder?.status === "Đã gửi email" ? "default" : "outline"}
+                  onClick={handleConfirmOrder}
+                  disabled={isConfirming || purchaseOrder?.status === "Đã xác nhận" || purchaseOrder?.status === "Đã hủy"}
+                >
+                  <CheckCircle className="mr-2 h-4 w-4" />
+                  {isConfirming ? "Đang xác nhận..." : "Xác nhận đơn hàng"}
+                </Button>
+              )}
+            </>
           )}
           <Button
             variant="outline"
@@ -745,6 +801,9 @@ Trân trọng,
                       <TableRow>
                         <TableHead className="font-medium">Sản phẩm</TableHead>
                         <TableHead className="font-medium">Số lượng</TableHead>
+                        {purchaseOrder?.status === "Đã nhận hàng" && (
+                          <TableHead className="font-medium">Đã nhận</TableHead>
+                        )}
                         <TableHead className="font-medium">Đơn giá</TableHead>
                         <TableHead className="font-medium">Thành tiền</TableHead>
                         <TableHead></TableHead>
@@ -807,6 +866,16 @@ Trân trọng,
                               )}
                             />
                           </TableCell>
+                          {purchaseOrder?.status === "Đã nhận hàng" && (
+                            <TableCell>
+                              <Input 
+                                type="text"
+                                value={receivedQuantities[parseInt(form.getValues(`items.${index}.productID`)) || 0] || 0}
+                                readOnly
+                                className="h-9 focus:ring-1 focus:ring-primary text-xs"
+                              />
+                            </TableCell>
+                          )}
                           <TableCell>
                             <FormField
                               control={form.control}
@@ -867,9 +936,9 @@ Trân trọng,
               <CardFooter className="flex justify-between bg-muted/20 rounded-b-lg">
                 <div className="flex items-center gap-2">
                     <Button type="submit" disabled={isSubmitting}>
-                        <Save className="mr-2 h-4 w-4" />
+                      <Save className="mr-2 h-4 w-4" />
                         {isSubmitting ? 'Đang lưu...' : 'Lưu thay đổi'}
-                    </Button>
+                </Button>
                 </div>
               </CardFooter>
             </Card>

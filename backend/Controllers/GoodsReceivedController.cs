@@ -25,7 +25,8 @@ namespace MyWebAPI.Controllers
         public async Task<ActionResult<IEnumerable<GoodsReceived>>> GetGoodsReceived()
         {
             return await _context.GoodsReceived
-                .Include(gr => gr.PurchaseOrder)
+                .Include(g => g.PurchaseOrder)
+                    .ThenInclude(p => p.Supplier)
                 .ToListAsync();
         }
 
@@ -34,12 +35,9 @@ namespace MyWebAPI.Controllers
         public async Task<ActionResult<GoodsReceived>> GetGoodsReceived(int id)
         {
             var goodsReceived = await _context.GoodsReceived
-                .Include(gr => gr.PurchaseOrder)
-                    .ThenInclude(po => po.Supplier)
-                .Include(gr => gr.PurchaseOrder)
-                    .ThenInclude(po => po.PurchaseOrderDetails)
-                        .ThenInclude(pod => pod.Product)
-                .FirstOrDefaultAsync(gr => gr.GoodsReceivedID == id);
+                .Include(g => g.PurchaseOrder)
+                    .ThenInclude(p => p.Supplier)
+                .FirstOrDefaultAsync(g => g.GoodsReceivedID == id);
 
             if (goodsReceived == null)
             {
@@ -63,10 +61,51 @@ namespace MyWebAPI.Controllers
         [HttpPost]
         public async Task<ActionResult<GoodsReceived>> CreateGoodsReceived(GoodsReceived goodsReceived)
         {
-            _context.GoodsReceived.Add(goodsReceived);
-            await _context.SaveChangesAsync();
+            try
+            {
+                // Kiểm tra dữ liệu đầu vào
+                if (string.IsNullOrEmpty(goodsReceived.Receiver))
+                {
+                    return BadRequest("Vui lòng nhập tên người nhận hàng");
+                }
 
-            return CreatedAtAction(nameof(GetGoodsReceived), new { id = goodsReceived.GoodsReceivedID }, goodsReceived);
+                if (string.IsNullOrEmpty(goodsReceived.PurchaseOrderID))
+                {
+                    return BadRequest("Mã đơn hàng không hợp lệ");
+                }
+
+                // Kiểm tra đơn hàng tồn tại
+                var purchaseOrder = await _context.PurchaseOrders
+                    .FirstOrDefaultAsync(p => p.PurchaseOrderID == goodsReceived.PurchaseOrderID);
+
+                if (purchaseOrder == null)
+                {
+                    return BadRequest("Không tìm thấy đơn hàng");
+                }
+
+                // Tạo phiếu nhận hàng mới
+                var newGoodsReceived = new GoodsReceived
+                {
+                    PurchaseOrderID = goodsReceived.PurchaseOrderID,
+                    ReceivedDate = goodsReceived.ReceivedDate,
+                    Receiver = goodsReceived.Receiver,
+                    Status = goodsReceived.Status,
+                    Remarks = goodsReceived.Remarks
+                };
+
+                _context.GoodsReceived.Add(newGoodsReceived);
+                await _context.SaveChangesAsync();
+
+                // Cập nhật trạng thái đơn hàng
+                purchaseOrder.Status = "Đã nhận hàng";
+                await _context.SaveChangesAsync();
+
+                return CreatedAtAction(nameof(GetGoodsReceived), new { id = newGoodsReceived.GoodsReceivedID }, newGoodsReceived);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Lỗi khi tạo phiếu nhận hàng: {ex.Message}");
+            }
         }
 
         // PUT: api/GoodsReceived/5
