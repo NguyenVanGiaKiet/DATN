@@ -70,9 +70,9 @@ export default function ReceiveProductsPage({ params }: { params: { id: string }
         const data = await response.json()
         setPurchaseOrder(data)
         
-        // Khởi tạo số lượng nhận cho mỗi sản phẩm
+        // Khởi tạo số lượng nhận cho mỗi sản phẩm với giá trị mặc định là 0
         const initialQuantities = data.purchaseOrderDetails.reduce((acc: { [key: number]: number }, item: PurchaseOrderItem) => {
-          acc[item.poDetailID] = item.receivedQuantity || 0
+          acc[item.poDetailID] = 0
           return acc
         }, {})
         setReceivedQuantities(initialQuantities)
@@ -93,13 +93,13 @@ export default function ReceiveProductsPage({ params }: { params: { id: string }
     
     if (item) {
       const remainingQuantity = item.quantity - (item.receivedQuantity || 0)
-      if (quantity <= remainingQuantity) {
+      if (quantity <= remainingQuantity && quantity >= 0) {
         setReceivedQuantities(prev => ({
           ...prev,
           [poDetailID]: quantity
         }))
       } else {
-        toast.error(`Số lượng nhận không được vượt quá số lượng còn lại (${remainingQuantity})`)
+        toast.error(`Số lượng nhận phải từ 0 đến ${remainingQuantity}`)
       }
     }
   }
@@ -108,10 +108,8 @@ export default function ReceiveProductsPage({ params }: { params: { id: string }
     try {
       setIsSubmitting(true)
 
-      // Tính tổng số lượng nhận
+      // Tính tổng số lượng nhận và đặt
       const totalReceivedQuantity = Object.values(receivedQuantities).reduce((sum, qty) => sum + qty, 0)
-      
-      // Tính tổng số lượng đặt
       const totalOrderQuantity = purchaseOrder?.purchaseOrderDetails.reduce((sum, detail) => sum + detail.quantity, 0) || 0
 
       // Xác định trạng thái
@@ -128,46 +126,15 @@ export default function ReceiveProductsPage({ params }: { params: { id: string }
         return
       }
 
-      // Tạo dữ liệu cho GoodsReceived
+      // Tạo dữ liệu goodsReceived
       const goodsReceivedData = {
-        goodsReceivedID: 0,
         purchaseOrderID: params.id,
         receivedDate: format(new Date(), "yyyy-MM-dd'T'HH:mm:ss"),
         receiver: receiver,
         status: status,
         remarks: remarks,
-        purchaseOrder: {
-          purchaseOrderID: params.id,
-          supplierID: purchaseOrder?.supplierID,
-          orderDate: purchaseOrder?.orderDate,
-          expectedDeliveryDate: purchaseOrder?.expectedDeliveryDate,
-          totalAmount: purchaseOrder?.totalAmount,
-          status: purchaseOrder?.status || "Đang xử lý",
-          approvedBy: purchaseOrder?.approvedBy,
-          notes: purchaseOrder?.notes,
-          supplier: {
-            supplierID: purchaseOrder?.supplier?.supplierID,
-            supplierName: purchaseOrder?.supplier?.supplierName,
-            contactPerson: purchaseOrder?.supplier?.contactPerson || "Unknown",
-            phone: purchaseOrder?.supplier?.phone || "Unknown",
-            email: purchaseOrder?.supplier?.email || "unknown@example.com",
-            address: purchaseOrder?.supplier?.address || "Unknown",
-            rating: purchaseOrder?.supplier?.rating || 0,
-            paymentTerms: purchaseOrder?.supplier?.paymentTerms || "Net 30",
-            deliveryTime: purchaseOrder?.supplier?.deliveryTime || 0,
-            status: purchaseOrder?.supplier?.status || "Đang hợp tác",
-            products: [],
-            purchaseOrders: []
-          },
-          purchaseOrderDetails: [],
-          goodsReceived: [],
-          returnsToSupplier: [],
-          invoices: [],
-          approvalLogs: []
-        }
+        receivedQuantities: receivedQuantities
       }
-
-      console.log("Sending data:", goodsReceivedData)
 
       // Gọi API để tạo GoodsReceived
       const response = await fetch("http://localhost:5190/api/goodsreceived", {
@@ -178,32 +145,14 @@ export default function ReceiveProductsPage({ params }: { params: { id: string }
         body: JSON.stringify(goodsReceivedData),
       })
 
+      const data = await response.json()
+      
       if (!response.ok) {
-        const errorData = await response.json()
-        let errorMessage = 'Không thể tạo phiếu nhận hàng'
-        
-        if (typeof errorData === 'string') {
-          errorMessage = errorData
-        } else if (errorData.message) {
-          errorMessage = errorData.message
-        } else if (errorData.errors) {
-          errorMessage = Object.values(errorData.errors).join(', ')
-        }
-        
-        throw new Error(errorMessage)
+        throw new Error(data.message || "Không thể tạo phiếu nhận hàng")
       }
 
-      // Tạo query string từ receivedQuantities
-      const queryParams = new URLSearchParams()
-      Object.entries(receivedQuantities).forEach(([poDetailID, quantity]) => {
-        if (quantity > 0) {
-          queryParams.append('received', `${poDetailID}:${quantity}`)
-        }
-      })
-
       toast.success("Đã nhận hàng thành công!")
-      // Chuyển hướng với query params chứa số lượng đã nhận
-      router.push(`/dashboard/purchase-orders/edit/${params.id}?${queryParams.toString()}`)
+      router.push(`/dashboard/purchase-orders/edit/${params.id}`)
     } catch (error) {
       console.error("Lỗi khi nhận hàng:", error)
       toast.error(error instanceof Error ? error.message : "Không thể nhận hàng. Vui lòng thử lại sau.")
@@ -228,6 +177,8 @@ export default function ReceiveProductsPage({ params }: { params: { id: string }
         return "bg-emerald-100 text-emerald-800 border-emerald-300"
       case "Đã trả hàng":
         return "bg-orange-100 text-orange-800 border-orange-300"
+      case "Đang nhận hàng":
+        return "bg-yellow-100 text-yellow-800 border-yellow-300"
       default:
         return "bg-gray-100 text-gray-800 border-gray-300"
     }
@@ -347,4 +298,4 @@ export default function ReceiveProductsPage({ params }: { params: { id: string }
       </Card>
     </div>
   )
-} 
+}

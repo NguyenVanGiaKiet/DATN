@@ -99,15 +99,15 @@ namespace MyWebAPI.Controllers
                         Quantity = detail.GetProperty("quantity").GetInt32(),
                         UnitPrice = detail.GetProperty("unitPrice").GetDecimal(),
                         TotalPrice = detail.GetProperty("totalPrice").GetDecimal(),
-                    ReceivedQuantity = 0,
-                    ReturnQuantity = 0
-                });
-            }
+                        ReceivedQuantity = 0,
+                        ReturnQuantity = 0
+                    });
+                }
 
                 purchaseOrder.PurchaseOrderDetails = details;
 
-            _context.PurchaseOrders.Add(purchaseOrder);
-            await _context.SaveChangesAsync();
+                _context.PurchaseOrders.Add(purchaseOrder);
+                await _context.SaveChangesAsync();
 
                 return Ok(new { 
                     message = $"Đơn hàng {purchaseOrder.PurchaseOrderID} đã được tạo thành công",
@@ -126,14 +126,14 @@ namespace MyWebAPI.Controllers
         {
             try
             {
-            var purchaseOrder = await _context.PurchaseOrders
-                .Include(po => po.PurchaseOrderDetails)
-                    .ThenInclude(pod => pod.Product)
-                    .Include(po => po.Supplier)
-                .FirstOrDefaultAsync(po => po.PurchaseOrderID == id);
+                var purchaseOrder = await _context.PurchaseOrders
+                    .Include(po => po.PurchaseOrderDetails)
+                        .ThenInclude(pod => pod.Product)
+                        .Include(po => po.Supplier)
+                    .FirstOrDefaultAsync(po => po.PurchaseOrderID == id);
 
-            if (purchaseOrder == null)
-            {
+                if (purchaseOrder == null)
+                {
                     return NotFound("Không tìm thấy đơn hàng");
                 }
 
@@ -196,7 +196,6 @@ namespace MyWebAPI.Controllers
         {
             try
             {
-                // Đảm bảo ID khớp với ID trong dữ liệu
                 string poId = purchaseOrderData.TryGetProperty("purchaseOrderID", out var poIdElement) ? 
                     poIdElement.GetString() : string.Empty;
                     
@@ -205,7 +204,6 @@ namespace MyWebAPI.Controllers
                     return BadRequest("ID trong đường dẫn không khớp với ID trong dữ liệu");
                 }
 
-                // Lấy đơn hàng hiện tại từ database
                 var existingOrder = await _context.PurchaseOrders
                     .Include(po => po.PurchaseOrderDetails)
                     .FirstOrDefaultAsync(po => po.PurchaseOrderID == id);
@@ -225,36 +223,25 @@ namespace MyWebAPI.Controllers
                 if (purchaseOrderData.TryGetProperty("expectedDeliveryDate", out var expectedDeliveryDateElement))
                     existingOrder.ExpectedDeliveryDate = DateTime.Parse(expectedDeliveryDateElement.GetString());
                     
-                if (purchaseOrderData.TryGetProperty("totalAmount", out var totalAmountElement))
-                    existingOrder.TotalAmount = totalAmountElement.GetDecimal();
-                    
-                if (purchaseOrderData.TryGetProperty("status", out var statusElement))
-                    existingOrder.Status = statusElement.GetString();
-                    
-                if (purchaseOrderData.TryGetProperty("approvedBy", out var approvedByElement))
-                    existingOrder.ApprovedBy = approvedByElement.GetString();
-                    
                 if (purchaseOrderData.TryGetProperty("notes", out var notesElement))
                     existingOrder.Notes = notesElement.GetString();
 
-                // Xóa hết chi tiết đơn hàng hiện tại
                 var detailsToRemove = existingOrder.PurchaseOrderDetails.ToList();
                 foreach (var detail in detailsToRemove)
                 {
                     _context.PurchaseOrderDetails.Remove(detail);
                 }
                 
-                int totalItems = 0;
                 decimal totalValue = 0;
-                
-                // Cập nhật chi tiết đơn hàng nếu có
+                bool allItemsReceived = true;
+                bool hasUnreceivedItems = false;
+                bool hasInvalidQuantity = false;
+                string invalidProductName = "";
+
                 if (purchaseOrderData.TryGetProperty("purchaseOrderDetails", out var detailsElement))
                 {
                     foreach (var detailElement in detailsElement.EnumerateArray())
                     {
-                        totalItems++;
-                        
-                        // Tạo chi tiết đơn hàng mới
                         var newDetail = new PurchaseOrderDetail
                         {
                             PurchaseOrderID = id,
@@ -262,28 +249,62 @@ namespace MyWebAPI.Controllers
                             Quantity = detailElement.GetProperty("quantity").GetInt32(),
                             UnitPrice = detailElement.GetProperty("unitPrice").GetDecimal(),
                             TotalPrice = detailElement.GetProperty("totalPrice").GetDecimal(),
-                            ReceivedQuantity = detailElement.TryGetProperty("receivedQuantity", out var recQtyElement) ? 
-                                recQtyElement.GetInt32() : 0,
-                            ReturnQuantity = detailElement.TryGetProperty("returnQuantity", out var retQtyElement) ? 
-                                retQtyElement.GetInt32() : 0
+                            ReceivedQuantity = detailElement.GetProperty("receivedQuantity").GetInt32(),
+                            ReturnQuantity = detailElement.GetProperty("returnQuantity").GetInt32()
                         };
-                        
+
+                        // Kiểm tra số lượng đặt có nhỏ hơn số lượng đã nhận không
+                        if (newDetail.Quantity < newDetail.ReceivedQuantity)
+                        {
+                            var product = await _context.Products.FindAsync(newDetail.ProductID);
+                            hasInvalidQuantity = true;
+                            invalidProductName = product?.ProductName ?? "Không xác định";
+                            break;
+                        }
+
+                        // Kiểm tra trạng thái nhận hàng
+                        if (newDetail.Quantity > newDetail.ReceivedQuantity)
+                        {
+                            allItemsReceived = false;
+                            hasUnreceivedItems = true;
+                        }
+                        else if (newDetail.Quantity == newDetail.ReceivedQuantity)
+                        {
+                            hasUnreceivedItems = false;
+                        }
+
                         totalValue += newDetail.TotalPrice;
-                        
                         _context.PurchaseOrderDetails.Add(newDetail);
                     }
                 }
 
-                // Lưu thay đổi
+                // Kiểm tra nếu có sản phẩm với số lượng đặt < số lượng nhận
+                if (hasInvalidQuantity)
+                {
+                    return BadRequest(new { message = $"Không thể cập nhật số lượng đặt bé hơn số lượng đã nhận cho sản phẩm: {invalidProductName}" });
+                }
+
+                // Cập nhật tổng giá trị và trạng thái
+                existingOrder.TotalAmount = totalValue;
+
+                // Cập nhật trạng thái dựa trên việc so sánh số lượng
+                if (allItemsReceived && !hasUnreceivedItems)
+                {
+                    existingOrder.Status = "Đã nhận hàng";
+                }
+                else if (hasUnreceivedItems)
+                {
+                    existingOrder.Status = "Đang nhận hàng";
+                }
+
                 await _context.SaveChangesAsync();
                 
-                // Trả về kết quả chi tiết
                 return Ok(new { 
                     message = $"Đơn hàng {id} đã được cập nhật thành công", 
                     details = new {
                         id = id,
-                        totalItems = totalItems,
                         totalValue = totalValue,
+                        status = existingOrder.Status,
                         updatedAt = DateTime.Now
                     }
                 });

@@ -27,8 +27,8 @@ namespace MyWebAPI.Models
         [StringLength(100)]
         public string ProcessedBy { get; set; }
 
-        // Navigation properties
+        // Navigation property without Required attribute
         [ForeignKey("InvoiceID")]
-        public virtual Invoice Invoice { get; set; }
+        public virtual Invoice Invoice { get; set; }    
     }
-} 
+}

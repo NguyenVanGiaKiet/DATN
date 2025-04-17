@@ -111,6 +111,12 @@ export default function PurchaseOrdersPage() {
         return "bg-emerald-100 text-emerald-800 border-emerald-300"
       case "Đã trả hàng":
         return "bg-orange-100 text-orange-800 border-orange-300"
+      case "Đang nhận hàng":
+        return "bg-yellow-100 text-yellow-800 border-yellow-300"
+      case "Đã xuất hóa đơn":
+        return "bg-yellow-100 text-yellow-800 border-yellow-300"
+      case "Đã thanh toán":
+        return "bg-green-100 text-green-800 border-green-300"
       default:
         return "bg-gray-100 text-gray-800 border-gray-300"
     }
@@ -270,7 +276,13 @@ export default function PurchaseOrdersPage() {
                     <TableRow 
                       key={order.purchaseOrderID} 
                       className="hover:bg-muted/50 cursor-pointer"
-                      onClick={() => router.push(`/dashboard/purchase-orders/edit/${order.purchaseOrderID}`)}
+                      onClick={() => {
+                        if (order.status === "Đã xuất hóa đơn" || order.status === "Đã thanh toán" || order.status === "Thanh toán một phần") {
+                          router.push(`/dashboard/purchase-orders/invoices/${order.purchaseOrderID}`)
+                        } else {
+                          router.push(`/dashboard/purchase-orders/edit/${order.purchaseOrderID}`)
+                        }
+                      }}
                     >
                       <TableCell className="font-medium">{order.purchaseOrderID}</TableCell>
                       <TableCell>{order.supplier.supplierName}</TableCell>

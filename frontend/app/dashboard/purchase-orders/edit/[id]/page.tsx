@@ -63,8 +63,8 @@ interface PurchaseOrder {
   purchaseOrderID: string
   supplierID: number
   supplier: {
-  supplierID: number
-  supplierName: string
+    supplierID: number
+    supplierName: string
   }
   orderDate: string
   expectedDeliveryDate: string
@@ -136,6 +136,7 @@ export default function EditPurchaseOrderPage({ params }: { params: { id: string
   const [returnQuantities, setReturnQuantities] = useState<{ [key: number]: number }>({})
   const [showAddProductDialog, setShowAddProductDialog] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [isEditing, setIsEditing] = useState(true) // Add this state to control editing mode
   const [showReturnDialog, setShowReturnDialog] = useState(false)
   const [showReceiveDialog, setShowReceiveDialog] = useState(false)
 
@@ -307,14 +308,14 @@ export default function EditPurchaseOrderPage({ params }: { params: { id: string
         const existingDetail = purchaseOrder?.purchaseOrderDetails.find(
           detail => detail.productID === parseInt(item.productID)
         )
-        
+
         return {
           poDetailID: item.id ? parseInt(item.id) : 0,
           purchaseOrderID: params.id,
           productID: parseInt(item.productID),
-        quantity: item.quantity || 0,
-        unitPrice: item.unitPrice || 0,
-        totalPrice: (item.quantity || 0) * (item.unitPrice || 0),
+          quantity: item.quantity || 0,
+          unitPrice: item.unitPrice || 0,
+          totalPrice: (item.quantity || 0) * (item.unitPrice || 0),
           receivedQuantity: existingDetail?.receivedQuantity || 0,
           returnQuantity: existingDetail?.returnQuantity || 0
         }
@@ -359,16 +360,15 @@ export default function EditPurchaseOrderPage({ params }: { params: { id: string
       }
 
       // Hiển thị thông báo thành công
-      toast.success(`Đơn hàng ${params.id} đã được cập nhật thành công với tổng giá trị ${totalAmount.toLocaleString('vi-VN')} VND.`, {
-        duration: 5000,
-        })
+      toast.success(`Đơn hàng ${params.id} đã được cập nhật thành công với tổng giá trị ${totalAmount.toLocaleString('vi-VN')} VND.`)
+      setHasChanges(false)
 
-        setHasChanges(false)
-      
-      // Đợi 1.5 giây để người dùng thấy thông báo trước khi chuyển trang
-      setTimeout(() => {
-        router.push("/dashboard/purchase-orders")
-      }, 1500)
+      // Tải lại dữ liệu đơn hàng sau khi cập nhật
+      const orderResponse = await fetch(`http://localhost:5190/api/purchaseorder/${params.id}`)
+      if (orderResponse.ok) {
+        const orderData = await orderResponse.json()
+        setPurchaseOrder(orderData)
+      }
     } catch (error) {
       console.error("Lỗi khi cập nhật đơn hàng:", error)
       toast.error(error instanceof Error ? error.message : "Không thể cập nhật đơn hàng. Vui lòng thử lại sau.")
@@ -451,6 +451,8 @@ export default function EditPurchaseOrderPage({ params }: { params: { id: string
         return "bg-emerald-100 text-emerald-800 border-emerald-300"
       case "Đã trả hàng":
         return "bg-orange-100 text-orange-800 border-orange-300"
+      case "Đang nhận hàng":
+        return "bg-yellow-100 text-yellow-800 border-yellow-300"
       default:
         return "bg-gray-100 text-gray-800 border-gray-300"
     }
@@ -466,17 +468,17 @@ Kính gửi ${purchaseOrder.supplier.supplierName},
 Ngày đặt: ${format(new Date(purchaseOrder.orderDate), "dd/MM/yyyy", { locale: vi })}
 Ngày giao dự kiến: ${format(new Date(purchaseOrder.expectedDeliveryDate), "dd/MM/yyyy", { locale: vi })}
 Tổng giá trị: ${new Intl.NumberFormat("vi-VN", {
-  style: "currency",
-  currency: "VND",
-}).format(purchaseOrder.totalAmount)}
+      style: "currency",
+      currency: "VND",
+    }).format(purchaseOrder.totalAmount)}
 
 Chi tiết đơn hàng:
-${purchaseOrder.purchaseOrderDetails.map(detail => 
-  `- ${detail.product.productName}: ${detail.quantity} ${detail.product.unit} x ${new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "VND",
-  }).format(detail.unitPrice)}`
-).join('\n')}
+${purchaseOrder.purchaseOrderDetails.map(detail =>
+      `- ${detail.product.productName}: ${detail.quantity} ${detail.product.unit} x ${new Intl.NumberFormat("vi-VN", {
+        style: "currency",
+        currency: "VND",
+      }).format(detail.unitPrice)}`
+    ).join('\n')}
 
 Trân trọng,
 [Tên công ty của bạn]`
@@ -503,7 +505,7 @@ Trân trọng,
 
       toast.success("Email đã được gửi thành công!")
       setIsEmailModalOpen(false)
-      
+
       // Tải lại dữ liệu đơn hàng
       const orderResponse = await fetch(`http://localhost:5190/api/purchaseorder/${params.id}`)
       if (orderResponse.ok) {
@@ -537,7 +539,7 @@ Trân trọng,
       }
 
       toast.success("Đơn hàng đã được xác nhận thành công!")
-      
+
       // Tải lại dữ liệu đơn hàng
       const orderResponse = await fetch(`http://localhost:5190/api/purchaseorder/${params.id}`)
       if (orderResponse.ok) {
@@ -572,7 +574,7 @@ Trân trọng,
 
       toast.success("Đơn hàng đã được hủy thành công!")
       setShowCancelDialog(false)
-      
+
       // Tải lại dữ liệu đơn hàng
       const orderResponse = await fetch(`http://localhost:5190/api/purchaseorder/${params.id}`)
       if (orderResponse.ok) {
@@ -590,35 +592,8 @@ Trân trọng,
   const handleReceiveProducts = async () => {
     router.push(`/dashboard/purchase-orders/receive/${params.id}`)
   }
-
   const handleCreateInvoice = async () => {
-    try {
-      setIsCreatingInvoice(true)
-      const response = await fetch(`http://localhost:5190/api/purchaseorder/${params.id}/create-invoice`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      })
-
-      if (!response.ok) {
-        throw new Error("Không thể tạo hóa đơn")
-      }
-
-      toast.success("Hóa đơn đã được tạo thành công!")
-      
-      // Tải lại dữ liệu đơn hàng
-      const orderResponse = await fetch(`http://localhost:5190/api/purchaseorder/${params.id}`)
-      if (orderResponse.ok) {
-        const orderData = await orderResponse.json()
-        setPurchaseOrder(orderData)
-      }
-    } catch (error) {
-      console.error("Lỗi khi tạo hóa đơn:", error)
-      toast.error("Không thể tạo hóa đơn. Vui lòng thử lại sau.")
-    } finally {
-      setIsCreatingInvoice(false)
-    }
+    router.push(`/dashboard/purchase-orders/invoices/${params.id}`)
   }
 
   if (isLoading) {
@@ -635,70 +610,76 @@ Trân trọng,
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
-      <div className="flex items-center gap-4">
-        <Button variant="outline" size="icon" className="h-9 w-9 rounded-full hover:bg-muted/50" onClick={handleCancel}>
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <h1 className="text-3xl font-bold tracking-tight">Chỉnh sửa đơn hàng</h1>
-        {purchaseOrder && (
+        <div className="flex items-center gap-4">
+          <Button variant="outline" size="icon" className="h-9 w-9 rounded-full hover:bg-muted/50" onClick={handleCancel}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <h1 className="text-3xl font-bold tracking-tight">Chỉnh sửa đơn hàng</h1>
+          {purchaseOrder && (
             <Badge className={getStatusClass(purchaseOrder.status)}>{purchaseOrder.status}</Badge>
           )}
         </div>
         <div className="flex items-center gap-2">
-          {purchaseOrder?.status === "Đã nhận hàng" ? (
+          {/* Nút Tạo hóa đơn */}
+          {(purchaseOrder?.status === "Đang nhận hàng" || purchaseOrder?.status === "Đã nhận hàng") && (
             <Button
-              variant="default"
+              variant={purchaseOrder?.status === "Đang nhận hàng" ? "outline" : "default"}
               onClick={handleCreateInvoice}
               disabled={isCreatingInvoice}
             >
               <FileText className="mr-2 h-4 w-4" />
               {isCreatingInvoice ? "Đang tạo..." : "Tạo hóa đơn"}
             </Button>
-          ) : (
-            <>
-              {purchaseOrder?.status !== "Đã xác nhận" && (
-                <Button
-                  variant={purchaseOrder?.status === "Đã gửi email" ? "outline" : "default"}
-                  onClick={handleSendEmailClick}
-                  disabled={isSendingEmail || purchaseOrder?.status === "Đã hủy"}
-                >
-                  <Mail className="mr-2 h-4 w-4" />
-                  {isSendingEmail ? "Đang gửi..." : purchaseOrder?.status === "Đã gửi email" ? "Gửi lại email" : "Gửi email"}
-                </Button>
-              )}
-              {purchaseOrder?.status === "Đã xác nhận" ? (
-                <>
-                  <Button
-                    variant="default"
-                    onClick={handleReceiveProducts}
-                    disabled={isReceiving}
-                  >
-                    <Package className="mr-2 h-4 w-4" />
-                    {isReceiving ? "Đang nhận..." : "Nhận sản phẩm"}
-                  </Button>
-                </>
-              ) : (
-                <Button
-                  variant={purchaseOrder?.status === "Đã gửi email" ? "default" : "outline"}
-                  onClick={handleConfirmOrder}
-                  disabled={isConfirming || purchaseOrder?.status === "Đã xác nhận" || purchaseOrder?.status === "Đã hủy"}
-                >
-                  <CheckCircle className="mr-2 h-4 w-4" />
-                  {isConfirming ? "Đang xác nhận..." : "Xác nhận đơn hàng"}
-                </Button>
-              )}
-            </>
           )}
+
+          {/* Nút Gửi email */}
+          {purchaseOrder?.status !== "Đã xác nhận" &&  purchaseOrder?.status !== "Đang nhận hàng" && purchaseOrder?.status !== "Đã nhận hàng" && (
+            <Button
+              variant={purchaseOrder?.status === "Đã gửi email" ? "outline" : "default"}
+              onClick={handleSendEmailClick}
+              disabled={isSendingEmail || purchaseOrder?.status === "Đã hủy" } 
+            >
+              <Mail className="mr-2 h-4 w-4" />
+              {isSendingEmail ? "Đang gửi..." : purchaseOrder?.status === "Đã gửi email" ? "Gửi lại email" : "Gửi email"}
+            </Button>
+          )}
+
+          {/* Nút Nhận sản phẩm / Tiếp tục nhận */}
+          {(purchaseOrder?.status === "Đã xác nhận" || purchaseOrder?.status === "Đang nhận hàng") && (
+            <Button
+              variant="default"
+              onClick={handleReceiveProducts}
+              disabled={isReceiving}
+            >
+              <Package className="mr-2 h-4 w-4" />
+              {isReceiving ? "Đang nhận..." : purchaseOrder?.status === "Đang nhận hàng" ? "Tiếp tục nhận" : "Nhận sản phẩm"}
+            </Button>
+          )}
+
+          {/* Nút Xác nhận đơn hàng */}
+          {!["Đã xác nhận", "Đang nhận hàng", "Đã nhận hàng"].includes(purchaseOrder?.status || "") && (
+            <Button
+              variant={purchaseOrder?.status === "Đã gửi email" ? "default" : "outline"}
+              onClick={handleConfirmOrder}
+              disabled={isConfirming || purchaseOrder?.status === "Đã xác nhận" || purchaseOrder?.status === "Đã hủy"}
+            >
+              <CheckCircle className="mr-2 h-4 w-4" />
+              {isConfirming ? "Đang xác nhận..." : "Xác nhận đơn hàng"}
+            </Button>
+          )}
+
+          {/* Nút Hủy đơn hàng */}
           <Button
             variant="outline"
             onClick={() => setShowCancelDialog(true)}
-            disabled={isCancelling || purchaseOrder?.status === "Đã hủy" }
+            disabled={isCancelling || purchaseOrder?.status === "Đã hủy"}
             className="text-red-500 hover:text-red-700"
           >
             <XCircle className="mr-2 h-4 w-4" />
             {isCancelling ? "Đang hủy..." : "Hủy đơn hàng"}
           </Button>
         </div>
+
       </div>
 
       <Form {...form}>
@@ -800,47 +781,68 @@ Trân trọng,
                     <TableHeader className="bg-muted/30">
                       <TableRow>
                         <TableHead className="font-medium">Sản phẩm</TableHead>
-                        <TableHead className="font-medium">Số lượng</TableHead>
-                        {purchaseOrder?.status === "Đã nhận hàng" && (
-                          <TableHead className="font-medium">Đã nhận</TableHead>
-                        )}
+                        <TableHead className="font-medium">Đơn vị</TableHead>
                         <TableHead className="font-medium">Đơn giá</TableHead>
+                        <TableHead className="font-medium">Số lượng đặt</TableHead>
+                        <TableHead className="font-medium">Số lượng đã nhận</TableHead>
                         <TableHead className="font-medium">Thành tiền</TableHead>
                         <TableHead></TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {fields.map((field, index) => (
-                        <TableRow key={field.id} className="hover:bg-muted/20">
+                        <TableRow key={field.id}>
                           <TableCell>
                             <FormField
                               control={form.control}
                               name={`items.${index}.productID`}
                               render={({ field }) => (
                                 <FormItem>
-                                  <Select
-                                    onValueChange={(value) => {
-                                      field.onChange(value)
-                                      handleProductChange(value, index)
-                                    }}
-                                    defaultValue={field.value}
-                                    value={field.value}
-                                  >
-                                    <FormControl>
-                                      <SelectTrigger className="h-9 border-input focus:ring-1 focus:ring-primary">
-                                        <SelectValue placeholder="Chọn sản phẩm">
+                                  <FormControl>
+                                    <Select
+                                      value={field.value.toString()}
+                                      onValueChange={(value) => handleProductChange(value, index)}
+                                      disabled={!isEditing}
+                                    >
+                                      <SelectTrigger className="h-9 w-[200px] focus:ring-1 focus:ring-primary">
+                                        <SelectValue>
                                           {products.find((product) => product.productID.toString() === field.value)?.productName || "Chọn sản phẩm"}
                                         </SelectValue>
                                       </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                      {products.map((product) => (
-                                        <SelectItem key={product.productID} value={product.productID.toString()}>
-                                          {product.productName} - {product.unit} - Tồn kho: {product.stockQuantity}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
+                                      <SelectContent>
+                                        {products.map((product) => (
+                                          <SelectItem key={product.productID} value={product.productID.toString()}>
+                                            {product.productName} - {product.unit} - Tồn kho: {product.stockQuantity}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </FormControl>
+                                  <FormMessage className="text-xs" />
+                                </FormItem>
+                              )}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            {products.find((p) => p.productID.toString() === form.getValues(`items.${index}.productID`))?.unit || "-"}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <FormField
+                              control={form.control}
+                              name={`items.${index}.unitPrice`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormControl>
+                                    <Input
+                                      type="number"
+                                      min="0"
+                                      step="1000"
+                                      {...field}
+                                      disabled={!isEditing}
+                                      onChange={(e) => handleUnitPriceChange(e, index)}
+                                      className="h-9 w-32 focus:ring-1 focus:ring-primary"
+                                    />
+                                  </FormControl>
                                   <FormMessage className="text-xs" />
                                 </FormItem>
                               )}
@@ -857,8 +859,9 @@ Trân trọng,
                                       type="number"
                                       min="1"
                                       {...field}
+                                      disabled={!isEditing}
                                       onChange={(e) => handleQuantityChange(e, index)}
-                                      className="h-9 focus:ring-1 focus:ring-primary"
+                                      className="h-9 w-24 focus:ring-1 focus:ring-primary"
                                     />
                                   </FormControl>
                                   <FormMessage className="text-xs" />
@@ -866,47 +869,19 @@ Trân trọng,
                               )}
                             />
                           </TableCell>
-                          {purchaseOrder?.status === "Đã nhận hàng" && (
-                            <TableCell>
-                              <Input 
-                                type="text"
-                                value={receivedQuantities[parseInt(form.getValues(`items.${index}.productID`)) || 0] || 0}
-                                readOnly
-                                className="h-9 focus:ring-1 focus:ring-primary text-xs"
-                              />
-                            </TableCell>
-                          )}
-                          <TableCell>
-                            <FormField
-                              control={form.control}
-                              name={`items.${index}.unitPrice`}
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormControl>
-                                    <Input
-                                      type="number"
-                                      min="0"
-                                      step="1000"
-                                      {...field}
-                                      onChange={(e) => handleUnitPriceChange(e, index)}
-                                      className="h-9 focus:ring-1 focus:ring-primary"
-                                    />
-                                  </FormControl>
-                                  <FormMessage className="text-xs" />
-                                </FormItem>
-                              )}
-                            />
+                          <TableCell className="text-center">
+                            {purchaseOrder?.purchaseOrderDetails[index]?.receivedQuantity || 0}
                           </TableCell>
                           <TableCell className="font-medium">
-                            {((form.getValues(`items.${index}.quantity`) || 0) * (form.getValues(`items.${index}.unitPrice`) || 0)).toLocaleString('vi-VN')} VND
+                            {((form.getValues(`items.${index}.quantity`) || 0) * (form.getValues(`items.${index}.unitPrice`) || 0)).toLocaleString("vi-VN")} VND
                           </TableCell>
                           <TableCell>
                             <Button
+                              type="button"
                               variant="ghost"
                               size="icon"
-                              type="button"
                               onClick={() => remove(index)}
-                              disabled={fields.length === 1}
+                              disabled={fields.length === 1 || !isEditing}
                               className="h-8 w-8 rounded-full hover:bg-destructive/10 hover:text-destructive"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -935,10 +910,10 @@ Trân trọng,
               </CardContent>
               <CardFooter className="flex justify-between bg-muted/20 rounded-b-lg">
                 <div className="flex items-center gap-2">
-                    <Button type="submit" disabled={isSubmitting}>
-                      <Save className="mr-2 h-4 w-4" />
-                        {isSubmitting ? 'Đang lưu...' : 'Lưu thay đổi'}
-                </Button>
+                  <Button type="submit" disabled={isSubmitting}>
+                    <Save className="mr-2 h-4 w-4" />
+                    {isSubmitting ? 'Đang lưu...' : 'Lưu thay đổi'}
+                  </Button>
                 </div>
               </CardFooter>
             </Card>
