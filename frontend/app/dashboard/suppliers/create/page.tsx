@@ -48,6 +48,7 @@ const formSchema = z.object({
   }),
   deliveryTime: z.number().min(1).max(30),
   status: z.enum(["Đang hợp tác", "Ngừng hợp tác"]),
+  imageUrl: z.string().optional(),
 })
 
 type FormValues = z.infer<typeof formSchema>
@@ -71,6 +72,7 @@ export default function CreateSupplierPage() {
       paymentTerms: "",
       deliveryTime: 1,
       status: "Đang hợp tác",
+      imageUrl: "",
     },
   })
 
@@ -106,7 +108,7 @@ export default function CreateSupplierPage() {
       })
 
       setHasChanges(false)
-      
+
       // Đợi 1.5 giây để người dùng thấy thông báo trước khi chuyển trang
       setTimeout(() => {
         router.push("/dashboard/suppliers")
@@ -128,12 +130,42 @@ export default function CreateSupplierPage() {
     }
   }
 
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("image", file);
+
+    try {
+      const res = await fetch("http://localhost:5190/api/supplier/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        throw new Error("Upload failed");
+      }
+
+      const data = await res.json();
+      const imageUrl = data.url;
+
+      // ✅ Gán giá trị ảnh vào form
+      form.setValue("imageUrl", imageUrl, { shouldDirty: true });
+
+      toast.success("Tải ảnh thành công!");
+    } catch (err) {
+      toast.error("Tải ảnh thất bại");
+      console.error(err);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center gap-4">
-        <Button 
-          variant="outline" 
-          size="icon" 
+        <Button
+          variant="outline"
+          size="icon"
           className="h-9 w-9 rounded-full hover:bg-muted/50"
           onClick={handleCancel}
         >
@@ -361,6 +393,20 @@ export default function CreateSupplierPage() {
                   )}
                 />
               </CardContent>
+              
+              <div className="space-y-2">
+                <label className="block text-sm font-medium">Ảnh đại diện</label>
+                <Input type="file" accept="image/*" onChange={handleFileChange} />
+                {form.watch("imageUrl") && (
+                  <img
+                    src={form.watch("imageUrl")}
+                    alt="Ảnh đại diện"
+                    className="w-40 h-40 object-cover rounded-lg border mt-2"
+                  />
+                )}
+
+              </div>
+
               <CardFooter className="flex justify-between bg-muted/20 rounded-b-lg">
                 <Button
                   variant="outline"

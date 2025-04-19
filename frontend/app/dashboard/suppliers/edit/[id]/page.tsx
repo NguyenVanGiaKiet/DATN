@@ -48,6 +48,7 @@ const formSchema = z.object({
   }),
   deliveryTime: z.number().min(1).max(30),
   status: z.enum(["Đang hợp tác", "Ngừng hợp tác"]),
+  imageUrl: z.string().nullable().optional(), // Thêm trường imageUrl nếu cần thiết
 })
 
 type FormValues = z.infer<typeof formSchema>
@@ -72,6 +73,7 @@ export default function EditSupplierPage({ params }: { params: { id: string } })
       paymentTerms: "",
       deliveryTime: 1,
       status: "Đang hợp tác",
+      imageUrl: null, // Thêm trường imageUrl nếu cần thiết
     },
   })
 
@@ -87,7 +89,7 @@ export default function EditSupplierPage({ params }: { params: { id: string } })
         }
         const data = await response.json()
         console.log("Dữ liệu nhận được từ API:", data)
-        
+
         // Cập nhật form với dữ liệu từ API
         form.reset({
           supplierName: data.supplierName,
@@ -99,6 +101,7 @@ export default function EditSupplierPage({ params }: { params: { id: string } })
           paymentTerms: data.paymentTerms,
           deliveryTime: data.deliveryTime,
           status: data.status,
+          imageUrl: data.imageUrl || null, // Thêm trường imageUrl nếu cần thiết
         })
         console.log("Form đã được cập nhật với dữ liệu:", form.getValues())
       } catch (error) {
@@ -138,10 +141,12 @@ export default function EditSupplierPage({ params }: { params: { id: string } })
         rating: Number(data.rating),
         paymentTerms: data.paymentTerms,
         deliveryTime: Number(data.deliveryTime),
-        status: data.status === "Đang hợp tác" ? "Đang hợp tác" : "Ngừng hợp tác"
+        status: data.status === "Đang hợp tác" ? "Đang hợp tác" : "Ngừng hợp tác",
+        imageUrl: data.imageUrl || null, // Thêm trường imageUrl nếu cần thiết
       }
 
       console.log("Dữ liệu đã format:", formattedData)
+      console.log("Image URL:", data.imageUrl);
 
       const response = await fetch(`http://localhost:5190/api/supplier/${params.id}`, {
         method: "PUT",
@@ -175,7 +180,7 @@ export default function EditSupplierPage({ params }: { params: { id: string } })
       })
 
       setHasChanges(false)
-      
+
       // Đợi 1.5 giây để người dùng thấy thông báo trước khi chuyển trang
       setTimeout(() => {
         router.push("/dashboard/suppliers")
@@ -197,6 +202,36 @@ export default function EditSupplierPage({ params }: { params: { id: string } })
     }
   }
 
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("image", file);
+
+    try {
+      const res = await fetch("http://localhost:5190/api/supplier/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        throw new Error("Upload failed");
+      }
+
+      const data = await res.json();
+      const imageUrl = data.url;
+
+      // ✅ Gán giá trị ảnh vào form
+      form.setValue("imageUrl", imageUrl, { shouldDirty: true });
+
+      toast.success("Tải ảnh thành công!");
+    } catch (err) {
+      toast.error("Tải ảnh thất bại");
+      console.error(err);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -211,9 +246,9 @@ export default function EditSupplierPage({ params }: { params: { id: string } })
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center gap-4">
-        <Button 
-          variant="outline" 
-          size="icon" 
+        <Button
+          variant="outline"
+          size="icon"
           className="h-9 w-9 rounded-full hover:bg-muted/50"
           onClick={handleCancel}
         >
@@ -226,7 +261,7 @@ export default function EditSupplierPage({ params }: { params: { id: string } })
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <div className="grid gap-6 md:grid-cols-2">
             <Card className="shadow-md hover:shadow-lg transition-shadow duration-300">
-              <CardHeader className="bg-muted/50 rounded-t-lg">
+              <CardHeader>
                 <CardTitle className="text-xl text-primary">Thông tin chung</CardTitle>
                 <CardDescription>Thông tin cơ bản về nhà cung cấp</CardDescription>
               </CardHeader>
@@ -441,6 +476,19 @@ export default function EditSupplierPage({ params }: { params: { id: string } })
                   )}
                 />
               </CardContent>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-medium">Ảnh đại diện</label>
+                <Input type="file" accept="image/*" onChange={handleFileChange} />
+                {form.watch("imageUrl") && (
+                  <img
+                    src={form.watch("imageUrl") || ""}
+                    alt="Ảnh đại diện"
+                    className="w-40 h-40 object-cover rounded-lg border mt-2"
+                  />
+                )}
+              </div>
+
               <CardFooter className="flex justify-between bg-muted/20 rounded-b-lg">
                 <Button
                   variant="outline"

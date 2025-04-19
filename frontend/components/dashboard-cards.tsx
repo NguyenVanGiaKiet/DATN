@@ -44,46 +44,63 @@ export function DashboardCards() {
         const now = new Date()
         const thisMonth = now.getMonth()
         const lastMonth = thisMonth - 1
-        
-        const currentMonthOrders = orders.filter((order: any) => 
+
+        const currentMonthOrders = orders.filter((order: any) =>
           new Date(order.orderDate).getMonth() === thisMonth
         )
-        const lastMonthOrders = orders.filter((order: any) => 
+        const lastMonthOrders = orders.filter((order: any) =>
           new Date(order.orderDate).getMonth() === lastMonth
         )
 
-        const currentMonthSpend = currentMonthOrders.reduce((sum: number, order: any) => 
+        const currentMonthSpend = currentMonthOrders.reduce((sum: number, order: any) =>
           sum + (order.totalAmount || 0), 0
         )
-        const lastMonthSpend = lastMonthOrders.reduce((sum: number, order: any) => 
+        const lastMonthSpend = lastMonthOrders.reduce((sum: number, order: any) =>
           sum + (order.totalAmount || 0), 0
         )
 
-        const pendingDeliveries = orders.filter((order: any) => 
+        const pendingDeliveries = orders.filter((order: any) =>
           order.status === 'Đang xử lý'
         ).length
 
-        const activeSuppliers = suppliers.filter((supplier: any) => 
+        const activeSuppliers = suppliers.filter((supplier: any) =>
           supplier.status
         ).length
 
         // Tính % tăng trưởng
-        const orderGrowth = lastMonthOrders.length > 0 
-          ? ((currentMonthOrders.length - lastMonthOrders.length) / lastMonthOrders.length) * 100 
+        const orderGrowth = lastMonthOrders.length > 0
+          ? ((currentMonthOrders.length - lastMonthOrders.length) / lastMonthOrders.length) * 100
           : 0
 
         const spendGrowth = lastMonthSpend > 0
           ? ((currentMonthSpend - lastMonthSpend) / lastMonthSpend) * 100
           : 0
+        // Tính số nhà cung cấp mới trong tháng
+        const newSuppliersThisMonth = suppliers.filter((supplier: any) => {
+          const createdDate = new Date(supplier.createdAt) // bạn cần đảm bảo có field `createdAt`
+          return createdDate.getMonth() === thisMonth && createdDate.getFullYear() === now.getFullYear()
+        }).length
 
+        // Tính số đơn hàng mới vào ngày hôm qua
+        const yesterday = new Date(now)
+        yesterday.setDate(now.getDate() - 1)
+        const isSameDay = (d1: Date, d2: Date) =>
+          d1.getDate() === d2.getDate() &&
+          d1.getMonth() === d2.getMonth() &&
+          d1.getFullYear() === d2.getFullYear()
+
+        const newDeliveriesYesterday = orders.filter((order: any) => {
+          const createdDate = new Date(order.orderDate)
+          return isSameDay(createdDate, yesterday) && order.status === "Đang xử lý"
+        }).length
         setStats({
           totalOrders: orders.length,
           activeSuppliers,
           pendingDeliveries,
           monthlySpend: currentMonthSpend,
           orderGrowth,
-          supplierGrowth: 0, // Có thể tính nếu có dữ liệu lịch sử
-          deliveryGrowth: 0, // Có thể tính nếu có dữ liệu lịch sử
+          supplierGrowth: newSuppliersThisMonth,
+          deliveryGrowth: newDeliveriesYesterday,
           spendGrowth
         })
       } catch (error) {
@@ -134,6 +151,7 @@ export function DashboardCards() {
           </div>
         </CardContent>
       </Card>
+
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Nhà cung cấp đang hoạt động</CardTitle>
@@ -141,8 +159,13 @@ export function DashboardCards() {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{stats.activeSuppliers}</div>
+          <div className="text-xs text-muted-foreground pt-1">
+            +{stats.supplierGrowth} mới trong tháng
+          </div>
         </CardContent>
       </Card>
+
+
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Đơn hàng đang xử lý</CardTitle>
@@ -150,8 +173,13 @@ export function DashboardCards() {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{stats.pendingDeliveries}</div>
+          <div className="text-xs text-muted-foreground pt-1">
+            +{stats.deliveryGrowth} vào ngày hôm qua
+          </div>
         </CardContent>
       </Card>
+
+
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Chi tiêu tháng này</CardTitle>
@@ -174,6 +202,7 @@ export function DashboardCards() {
         </CardContent>
       </Card>
     </div>
+
   )
 }
 

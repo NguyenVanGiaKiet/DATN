@@ -67,6 +67,28 @@ namespace MyWebAPI.Controllers
                 .Where(po => po.SupplierID == supplierId)
                 .ToListAsync();
         }
+        [HttpGet("recent")]
+        public async Task<ActionResult<IEnumerable<RecentOrderDTO>>> GetRecentOrders()
+        {
+            var recentOrders = await _context.PurchaseOrders
+                .Include(po => po.Supplier)
+                .OrderByDescending(po => po.OrderDate)
+                .Take(5)
+                .Select(po => new RecentOrderDTO
+                {
+                    PurchaseOrderID = po.PurchaseOrderID,
+                    OrderDate = po.OrderDate,
+                    ExpectedDeliveryDate = po.ExpectedDeliveryDate,
+                    TotalAmount = po.TotalAmount,
+                    Status = po.Status,
+                    ApprovedBy = po.ApprovedBy,
+                    SupplierName = po.Supplier.SupplierName,
+                    ImageUrl = po.Supplier.ImageUrl
+                })
+                .ToListAsync();
+
+            return recentOrders;
+        }
 
         // POST: api/PurchaseOrder
         [HttpPost]
@@ -83,13 +105,13 @@ namespace MyWebAPI.Controllers
                     TotalAmount = purchaseOrderData.GetProperty("totalAmount").GetDecimal(),
                     Status = "Đang xử lý",
                     ApprovedBy = "System",
-                    Notes = purchaseOrderData.TryGetProperty("notes", out var notesElement) ? 
+                    Notes = purchaseOrderData.TryGetProperty("notes", out var notesElement) ?
                         notesElement.GetString() : string.Empty
                 };
 
                 var details = new List<PurchaseOrderDetail>();
                 var detailsArray = purchaseOrderData.GetProperty("purchaseOrderDetails").EnumerateArray();
-                
+
                 foreach (var detail in detailsArray)
                 {
                     details.Add(new PurchaseOrderDetail
@@ -109,7 +131,8 @@ namespace MyWebAPI.Controllers
                 _context.PurchaseOrders.Add(purchaseOrder);
                 await _context.SaveChangesAsync();
 
-                return Ok(new { 
+                return Ok(new
+                {
                     message = $"Đơn hàng {purchaseOrder.PurchaseOrderID} đã được tạo thành công",
                     purchaseOrderID = purchaseOrder.PurchaseOrderID
                 });
@@ -196,9 +219,9 @@ namespace MyWebAPI.Controllers
         {
             try
             {
-                string poId = purchaseOrderData.TryGetProperty("purchaseOrderID", out var poIdElement) ? 
+                string poId = purchaseOrderData.TryGetProperty("purchaseOrderID", out var poIdElement) ?
                     poIdElement.GetString() : string.Empty;
-                    
+
                 if (id != poId)
                 {
                     return BadRequest("ID trong đường dẫn không khớp với ID trong dữ liệu");
@@ -216,13 +239,13 @@ namespace MyWebAPI.Controllers
                 // Cập nhật thông tin cơ bản của đơn hàng
                 if (purchaseOrderData.TryGetProperty("supplierID", out var supplierIdElement))
                     existingOrder.SupplierID = supplierIdElement.GetInt32();
-                    
+
                 if (purchaseOrderData.TryGetProperty("orderDate", out var orderDateElement))
                     existingOrder.OrderDate = DateTime.Parse(orderDateElement.GetString());
-                    
+
                 if (purchaseOrderData.TryGetProperty("expectedDeliveryDate", out var expectedDeliveryDateElement))
                     existingOrder.ExpectedDeliveryDate = DateTime.Parse(expectedDeliveryDateElement.GetString());
-                    
+
                 if (purchaseOrderData.TryGetProperty("notes", out var notesElement))
                     existingOrder.Notes = notesElement.GetString();
 
@@ -231,7 +254,7 @@ namespace MyWebAPI.Controllers
                 {
                     _context.PurchaseOrderDetails.Remove(detail);
                 }
-                
+
                 decimal totalValue = 0;
                 bool allItemsReceived = true;
                 bool hasUnreceivedItems = false;
@@ -298,10 +321,12 @@ namespace MyWebAPI.Controllers
                 }
 
                 await _context.SaveChangesAsync();
-                
-                return Ok(new { 
-                    message = $"Đơn hàng {id} đã được cập nhật thành công", 
-                    details = new {
+
+                return Ok(new
+                {
+                    message = $"Đơn hàng {id} đã được cập nhật thành công",
+                    details = new
+                    {
                         id = id,
                         totalValue = totalValue,
                         status = existingOrder.Status,
@@ -324,7 +349,7 @@ namespace MyWebAPI.Controllers
             {
                 return NotFound();
             }
-            
+
             _context.PurchaseOrders.Remove(purchaseOrder);
             await _context.SaveChangesAsync();
 

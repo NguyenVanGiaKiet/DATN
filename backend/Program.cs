@@ -66,6 +66,7 @@ if (!app.Environment.IsDevelopment())
 // 🔹 6. Bật HTTPS Redirect (nếu dùng HTTPS)
 app.UseHttpsRedirection();
 
+app.UseStaticFiles();
 // 🔹 7. Bật CORS
 app.UseCors("AllowAll");
 

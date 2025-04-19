@@ -23,6 +23,7 @@ interface Supplier {
   paymentTerms: string
   deliveryTime: string
   status: string
+  imageUrl: string
   products: any[]
   purchaseOrders: any[]
 }
@@ -82,24 +83,24 @@ export default function SuppliersPage() {
 
   // Lọc suppliers theo search term và các bộ lọc
   const filteredSuppliers = suppliers.filter(supplier => {
-    const matchesSearch = 
+    const matchesSearch =
       supplier.supplierName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       supplier.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       supplier.phone.includes(searchTerm) ||
       supplier.contactPerson.toLowerCase().includes(searchTerm.toLowerCase())
-    
+
     const matchesStatus = statusFilter === "all" || supplier.status === statusFilter
-    const matchesRating = ratingFilter === "all" || 
+    const matchesRating = ratingFilter === "all" ||
       (ratingFilter === "5" && supplier.rating === 5) ||
       (ratingFilter === "4" && supplier.rating === 4) ||
       (ratingFilter === "3" && supplier.rating === 3) ||
       (ratingFilter === "2" && supplier.rating === 2) ||
       (ratingFilter === "1" && supplier.rating === 1)
-    const matchesDeliveryTime = deliveryTimeFilter === "all" || 
+    const matchesDeliveryTime = deliveryTimeFilter === "all" ||
       (deliveryTimeFilter === "fast" && parseInt(supplier.deliveryTime) <= 3) ||
       (deliveryTimeFilter === "medium" && parseInt(supplier.deliveryTime) > 3 && parseInt(supplier.deliveryTime) <= 7) ||
       (deliveryTimeFilter === "slow" && parseInt(supplier.deliveryTime) > 7)
-    
+
     return matchesSearch && matchesStatus && matchesRating && matchesDeliveryTime
   })
 
@@ -131,8 +132,8 @@ export default function SuppliersPage() {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2 w-full max-w-sm relative">
               <Search className="h-4 w-4 text-muted-foreground absolute ml-2" />
-              <Input 
-                placeholder="Tìm kiếm nhà cung cấp..." 
+              <Input
+                placeholder="Tìm kiếm nhà cung cấp..."
                 className="pl-8"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -182,8 +183,8 @@ export default function SuppliersPage() {
                   <SelectItem value="slow">Chậm (≥ 7 ngày)</SelectItem>
                 </SelectContent>
               </Select>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="sm"
                 onClick={clearAllFilters}
                 className="flex items-center gap-2"
@@ -197,8 +198,8 @@ export default function SuppliersPage() {
           {/* Hiển thị danh sách nhà cung cấp dạng card */}
           <div className="grid grid-cols-5 gap-4">
             {paginatedSuppliers.map((supplier) => (
-              <Card 
-                key={supplier.supplierID} 
+              <Card
+                key={supplier.supplierID}
                 className="hover:shadow-lg hover:scale-[1.02] transition-all duration-200 cursor-pointer"
                 onClick={() => router.push(`/dashboard/suppliers/edit/${supplier.supplierID}`)}
               >
@@ -212,21 +213,34 @@ export default function SuppliersPage() {
                   <CardDescription className="text-xs">{supplier.contactPerson}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <Phone className="h-3 w-3 text-muted-foreground" />
-                      <span className="text-xs">{supplier.phone}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Mail className="h-3 w-3 text-muted-foreground" />
-                      <span className="text-xs">{supplier.email}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-3 w-3 text-muted-foreground" />
-                      <span className="text-xs">{supplier.address}</span>
+                  <div className="space-y-3">
+                    {supplier.imageUrl && (
+                      <div className="w-full h-32 rounded-md overflow-hidden border border-gray-200">
+                        <img
+                          src={supplier.imageUrl}
+                          alt={`Ảnh ${supplier.supplierName}`}
+                          className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                        />
+                      </div>
+                    )}
+
+                    <div className="space-y-1 text-sm">
+                      <div className="flex items-center gap-2">
+                        <Phone className="h-3 w-3 text-muted-foreground" />
+                        <span>{supplier.phone}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Mail className="h-3 w-3 text-muted-foreground" />
+                        <span>{supplier.email}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-3 w-3 text-muted-foreground" />
+                        <span>{supplier.address}</span>
+                      </div>
                     </div>
                   </div>
                 </CardContent>
+
               </Card>
             ))}
           </div>
@@ -236,8 +250,8 @@ export default function SuppliersPage() {
               Hiển thị {startIndex + 1} đến {Math.min(startIndex + itemsPerPage, filteredSuppliers.length)} trong tổng số {filteredSuppliers.length} nhà cung cấp
             </div>
             <div className="flex items-center space-x-2">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="sm"
                 onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1}
@@ -245,8 +259,8 @@ export default function SuppliersPage() {
                 <ChevronLeft className="h-4 w-4" />
                 Trước
               </Button>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="sm"
                 onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                 disabled={currentPage === totalPages}

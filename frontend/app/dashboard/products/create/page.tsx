@@ -33,6 +33,7 @@ interface Supplier {
   paymentTerms: string
   deliveryTime: string
   status: string
+  imageUrl?: string
 }
 
 const productSchema = z.object({
@@ -48,6 +49,7 @@ const productSchema = z.object({
   reorderLevel: z.number()
     .int("Số lượng tồn kho tối thiểu phải là số nguyên")
     .min(0, "Số lượng tồn kho tối thiểu phải lớn hơn hoặc bằng 0"),
+  imageUrl: z.string().optional(),
   categoryID: z.number().min(1, "Danh mục là bắt buộc"),
   supplierID: z.number().min(1, "Nhà cung cấp là bắt buộc"),
 })
@@ -72,6 +74,7 @@ export default function CreateProductPage() {
       unit: "",
       stockQuantity: 0,
       reorderLevel: 0,
+      imageUrl: "",
       categoryID: 0,
       supplierID: 0,
     },
@@ -110,64 +113,66 @@ export default function CreateProductPage() {
     e.preventDefault();
     setLoading(true);
     try {
-        const selectedCategory = categories.find(c => c.categoryID === form.getValues("categoryID"));
-        const selectedSupplier = suppliers.find(s => s.supplierID === form.getValues("supplierID"));
+      const selectedCategory = categories.find(c => c.categoryID === form.getValues("categoryID"));
+      const selectedSupplier = suppliers.find(s => s.supplierID === form.getValues("supplierID"));
 
-        if (!selectedCategory || !selectedSupplier) {
-            throw new Error("Vui lòng chọn danh mục và nhà cung cấp hợp lệ");
-        }
+      if (!selectedCategory || !selectedSupplier) {
+        throw new Error("Vui lòng chọn danh mục và nhà cung cấp hợp lệ");
+      }
 
-        const response = await fetch('http://localhost:5190/api/product', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                productName: form.getValues("productName"),
-                unit: form.getValues("unit"),
-                stockQuantity: form.getValues("stockQuantity"),
-                reorderLevel: form.getValues("reorderLevel"),
-                categoryID: form.getValues("categoryID"),
-                supplierID: form.getValues("supplierID"),
-                Category: {
-                    categoryID: selectedCategory.categoryID,
-                    categoryName: selectedCategory.categoryName,
-                    description: selectedCategory.description,
-                    products: []
-                },
-                Supplier: {
-                    supplierID: selectedSupplier.supplierID,
-                    supplierName: selectedSupplier.supplierName,
-                    contactPerson: selectedSupplier.contactPerson,
-                    phone: selectedSupplier.phone,
-                    email: selectedSupplier.email,
-                    address: selectedSupplier.address,
-                    rating: selectedSupplier.rating,
-                    paymentTerms: selectedSupplier.paymentTerms,
-                    deliveryTime: selectedSupplier.deliveryTime,
-                    status: selectedSupplier.status,
-                    products: [],
-                    purchaseOrders: []
-                },
-                ReturnsToSupplier: [],
-                PurchaseOrderDetails: []
-            }),
-        });
+      const response = await fetch('http://localhost:5190/api/product', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          productName: form.getValues("productName"),
+          unit: form.getValues("unit"),
+          stockQuantity: form.getValues("stockQuantity"),
+          reorderLevel: form.getValues("reorderLevel"),
+          imageUrl: form.getValues("imageUrl"),
+          categoryID: form.getValues("categoryID"),
+          supplierID: form.getValues("supplierID"),
+          Category: {
+            categoryID: selectedCategory.categoryID,
+            categoryName: selectedCategory.categoryName,
+            description: selectedCategory.description,
+            products: []
+          },
+          Supplier: {
+            supplierID: selectedSupplier.supplierID,
+            supplierName: selectedSupplier.supplierName,
+            contactPerson: selectedSupplier.contactPerson,
+            phone: selectedSupplier.phone,
+            email: selectedSupplier.email,
+            address: selectedSupplier.address,
+            rating: selectedSupplier.rating,
+            paymentTerms: selectedSupplier.paymentTerms,
+            deliveryTime: selectedSupplier.deliveryTime,
+            status: selectedSupplier.status,
+            imageUrl: selectedSupplier.imageUrl,
+            products: [],
+            purchaseOrders: []
+          },
+          ReturnsToSupplier: [],
+          PurchaseOrderDetails: []
+        }),
+      });
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            console.error('Lỗi từ server:', errorData);
-            throw new Error(errorData.message || 'Không thể tạo sản phẩm');
-        }
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Lỗi từ server:', errorData);
+        throw new Error(errorData.message || 'Không thể tạo sản phẩm');
+      }
 
-        const data = await response.json();
-        toast.success('Tạo sản phẩm thành công');
-        router.push('/dashboard/products');
+      const data = await response.json();
+      toast.success('Tạo sản phẩm thành công');
+      router.push('/dashboard/products');
     } catch (error) {
-        console.error('Lỗi khi tạo sản phẩm:', error);
-        toast.error(error instanceof Error ? error.message : 'Không thể tạo sản phẩm');
+      console.error('Lỗi khi tạo sản phẩm:', error);
+      toast.error(error instanceof Error ? error.message : 'Không thể tạo sản phẩm');
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
   };
 
@@ -202,7 +207,7 @@ export default function CreateProductPage() {
 
       const data = await response.json();
       console.log('Dữ liệu nhận về:', data);
-      
+
       setCategories([...categories, data]);
       setIsCategoryDialogOpen(false);
       setNewCategory({ categoryName: "", description: "" });
@@ -213,6 +218,36 @@ export default function CreateProductPage() {
     }
   };
 
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("image", file);
+
+    try {
+      const res = await fetch("http://localhost:5190/api/product/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        throw new Error("Upload failed");
+      }
+
+      const data = await res.json();
+      const imageUrl = data.url;
+
+      // ✅ Gán giá trị ảnh vào form
+      form.setValue("imageUrl", imageUrl, { shouldDirty: true });
+
+      toast.success("Tải ảnh thành công!");
+    } catch (err) {
+      toast.error("Tải ảnh thất bại");
+      console.error(err);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
@@ -220,7 +255,7 @@ export default function CreateProductPage() {
           <Button variant="outline" size="icon" onClick={() => router.back()}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <h1 className="text-3xl font-bold tracking-tight">Tạo Sản phẩm Mới</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Thêm Sản phẩm Mới</h1>
         </div>
       </div>
 
@@ -397,6 +432,18 @@ export default function CreateProductPage() {
                     {form.formState.errors.supplierID.message}
                   </p>
                 )}
+              </div>
+              <div className="space-y-2">
+                <label className="block text-sm font-medium">Ảnh đại diện</label>
+                <Input type="file" accept="image/*" onChange={handleFileChange} />
+                {form.watch("imageUrl") && (
+                  <img
+                    src={form.watch("imageUrl")}
+                    alt="Ảnh đại diện"
+                    className="w-40 h-40 object-cover rounded-lg border mt-2"
+                  />
+                )}
+
               </div>
             </div>
 

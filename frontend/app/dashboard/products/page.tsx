@@ -19,6 +19,7 @@ interface Product {
   unit: string
   stockQuantity: number
   reorderLevel: number
+  imageUrl: string
   categoryID: number
   category: {
     categoryName: string
@@ -220,6 +221,15 @@ export default function ProductsPage() {
                   onClick={() => router.push(`/dashboard/products/edit/${product.productID}`)}
                 >
                   <CardContent className="p-4">
+                  {product.imageUrl && (
+                      <div className="w-full h-32 rounded-md overflow-hidden border border-gray-200">
+                        <img
+                          src={product.imageUrl}
+                          alt={`Ảnh ${product.productName}`}
+                          className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                        />
+                      </div>
+                    )}
                     <div className="flex flex-col gap-2">
                       <div className="flex items-center justify-between">
                         <h3 className="font-semibold">{product.productName}</h3>

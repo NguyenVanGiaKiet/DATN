@@ -44,7 +44,8 @@ namespace MyWebAPI.Controllers
                     s.Rating,
                     s.PaymentTerms,
                     s.DeliveryTime,
-                    s.Status
+                    s.Status,
+                    s.ImageUrl,
                 })
                 .FirstOrDefaultAsync();
 
@@ -77,15 +78,18 @@ namespace MyWebAPI.Controllers
                     Rating = supplierDTO.Rating,
                     PaymentTerms = supplierDTO.PaymentTerms,
                     DeliveryTime = supplierDTO.DeliveryTime,
-                    Status = supplierDTO.Status
+                    Status = supplierDTO.Status,
+                    ImageUrl = supplierDTO.ImageUrl // Cập nhật URL hình ảnh nếu có
                 };
 
                 _context.Suppliers.Add(supplier);
                 await _context.SaveChangesAsync();
 
-                return Ok(new { 
+                return Ok(new
+                {
                     message = $"Nhà cung cấp {supplier.SupplierName} đã được tạo thành công",
-                    details = new {
+                    details = new
+                    {
                         id = supplier.SupplierID,
                         name = supplier.SupplierName,
                         status = supplier.Status,
@@ -97,6 +101,26 @@ namespace MyWebAPI.Controllers
             {
                 return StatusCode(500, new { message = $"Lỗi khi thêm nhà cung cấp mới: {ex.Message}" });
             }
+        }
+        [HttpPost("upload")]
+        public async Task<IActionResult> UploadImage(IFormFile image)
+        {
+            if (image == null || image.Length == 0)
+                return BadRequest("No file uploaded.");
+
+            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+            if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
+
+            var fileName = Guid.NewGuid().ToString() + Path.GetExtension(image.FileName);
+            var filePath = Path.Combine(uploadsFolder, fileName);
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await image.CopyToAsync(stream);
+            }
+
+            var fileUrl = $"{Request.Scheme}://{Request.Host}/uploads/{fileName}";
+            return Ok(new { url = fileUrl });
         }
 
         // PUT: api/Supplier/5
@@ -126,9 +150,11 @@ namespace MyWebAPI.Controllers
                     // Kiểm tra xem có sản phẩm hoặc đơn hàng nào đang liên kết không
                     if (existingSupplier.Products?.Any() == true || existingSupplier.PurchaseOrders?.Any() == true)
                     {
-                        return BadRequest(new { 
+                        return BadRequest(new
+                        {
                             message = "Không thể cập nhật trạng thái nhà cung cấp sang 'Ngừng hợp tác' vì có sản phẩm hoặc đơn hàng đang liên kết.",
-                            errors = new {
+                            errors = new
+                            {
                                 Products = existingSupplier.Products?.Select(p => p.ProductID).ToList(),
                                 PurchaseOrders = existingSupplier.PurchaseOrders?.Select(po => po.PurchaseOrderID).ToList()
                             }
@@ -146,12 +172,15 @@ namespace MyWebAPI.Controllers
                 existingSupplier.PaymentTerms = supplierDTO.PaymentTerms;
                 existingSupplier.DeliveryTime = supplierDTO.DeliveryTime;
                 existingSupplier.Status = supplierDTO.Status;
+                existingSupplier.ImageUrl = supplierDTO.ImageUrl; // Cập nhật URL hình ảnh nếu có
 
                 await _context.SaveChangesAsync();
 
-                return Ok(new { 
+                return Ok(new
+                {
                     message = $"Nhà cung cấp {existingSupplier.SupplierName} đã được cập nhật thành công",
-                    details = new {
+                    details = new
+                    {
                         id = existingSupplier.SupplierID,
                         name = existingSupplier.SupplierName,
                         status = existingSupplier.Status,

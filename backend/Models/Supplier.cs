@@ -42,6 +42,8 @@ namespace MyWebAPI.Models
         [Required]
         [StringLength(20)]
         public string Status { get; set; }
+        
+        public string ImageUrl { get; set; } 
 
         // Navigation properties
         public virtual ICollection<Product> Products { get; set; }

@@ -42,5 +42,7 @@ namespace MyWebAPI.Models
         [Required(ErrorMessage = "Trạng thái là bắt buộc")]
         [StringLength(20, ErrorMessage = "Trạng thái không được vượt quá 20 ký tự")]
         public string Status { get; set; }
+
+        public string ImageUrl { get; set; } // Optional field for image URL
     }
 } 

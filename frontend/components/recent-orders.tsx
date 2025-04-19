@@ -1,124 +1,60 @@
 "use client"
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useEffect, useState } from "react"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
-interface RecentOrder {
-  purchaseOrderID: string
-  orderDate: string
-  supplierName: string
-  totalAmount: number
-  status: string
+// Kiểu dữ liệu cho mỗi đơn hàng
+interface PurchaseOrder {
+  purchaseOrderID: string;
+  supplierName: string;
+  imageUrl?: string;
+  totalAmount: number;
 }
 
 export function RecentOrders() {
-  const [orders, setOrders] = useState<RecentOrder[]>([])
-  const [loading, setLoading] = useState(true)
+  const [orders, setOrders] = useState<PurchaseOrder[]>([])
 
   useEffect(() => {
-    const fetchRecentOrders = async () => {
-      try {
-        setLoading(true)
-        const response = await fetch('http://localhost:5190/api/purchaseorder')
-        const data = await response.json()
-
-        // Sắp xếp theo ngày mới nhất và lấy 5 đơn hàng
-        const recentOrders = data
-          .sort((a: any, b: any) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime())
-          .slice(0, 5)
-          .map((order: any) => ({
-            purchaseOrderID: order.purchaseOrderID,
-            orderDate: new Date(order.orderDate).toLocaleDateString('vi-VN'),
-            supplierName: order.supplier?.supplierName || 'Không xác định',
-            totalAmount: order.totalAmount || 0,
-            status: order.status || 'Đang xử lý'
-          }))
-
-        setOrders(recentOrders)
-      } catch (error) {
-        console.error('Error fetching recent orders:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchRecentOrders()
+    // Thay link này bằng URL API thật của bạn
+    fetch("http://localhost:5190/api/purchaseorder/recent")
+      .then((res) => res.json())
+      .then((data) => setOrders(data.slice(0, 5))) // lấy 5 đơn hàng mới nhất
+      .catch((err) => console.error("Error fetching orders:", err))
   }, [])
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Đã xác nhận':
-        return 'text-green-500'
-      case 'Đã gửi email':
-        return 'text-blue-500'
-      case 'Đang xử lý':
-        return 'text-yellow-500'
-      case 'Đã hủy':
-        return 'text-red-500'
-      default:
-        return 'text-gray-500'
-    }
-  }
-
-  if (loading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Đơn hàng gần đây</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-8">
-            <div className="flex items-center justify-center h-40">
-              <p className="text-muted-foreground">Đang tải dữ liệu...</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    )
-  }
-
   return (
-    <Card>
+    <Card className="col-span-3">
       <CardHeader>
-        <CardTitle>Đơn hàng gần đây</CardTitle>
+        <CardTitle>Recent Purchase Orders</CardTitle>
+        <CardDescription>Latest 5 purchase orders created in the system</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-8">
-          {orders.length === 0 ? (
-            <div className="flex items-center justify-center">
-              <p className="text-muted-foreground">Chưa có đơn hàng nào</p>
-            </div>
-          ) : (
-            orders.map((order) => (
-              <div key={order.purchaseOrderID} className="flex items-center">
-                <div className="space-y-1">
-                  <p className="text-sm font-medium leading-none">
-                    {order.supplierName}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Mã đơn: {order.purchaseOrderID}
-                  </p>
-                </div>
-                <div className="ml-auto text-right">
-                  <p className="text-sm font-medium">
-                    {new Intl.NumberFormat('vi-VN', { 
-                      style: 'currency', 
-                      currency: 'VND' 
-                    }).format(order.totalAmount)}
-                  </p>
-                  <p className={`text-sm ${getStatusColor(order.status)}`}>
-                    {order.status}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {order.orderDate}
-                  </p>
-                </div>
+          {orders.map((order) => (
+            <div key={order.purchaseOrderID} className="flex items-center">
+              <Avatar className="h-9 w-9">
+                <AvatarImage src={order.imageUrl || "/placeholder.svg"} alt={order.supplierName} />
+                <AvatarFallback>
+                  {order.supplierName
+                    .split(" ")
+                    .map((word) => word[0])
+                    .join("")
+                    .toUpperCase()
+                    .slice(0, 2)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="ml-4 space-y-1">
+                <p className="text-sm font-medium leading-none">{order.purchaseOrderID}</p>
+                <p className="text-sm text-muted-foreground">{order.supplierName}</p>
               </div>
-            ))
-          )}
+              <div className="ml-auto font-medium">
+                {order.totalAmount.toLocaleString()} VND
+              </div>
+            </div>
+          ))}
         </div>
       </CardContent>
     </Card>
   )
 }
-

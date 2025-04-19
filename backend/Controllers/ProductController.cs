@@ -73,67 +73,45 @@ namespace MyWebAPI.Controllers
                 .ToListAsync();
         }
 
-        // POST: api/Product
         [HttpPost]
-        public async Task<ActionResult<Product>> CreateProduct([FromBody] Product product)
+        public async Task<IActionResult> CreateProduct(ProductDTO dto)
         {
-            try
+            var product = new Product
             {
-                // Kiểm tra dữ liệu đầu vào
-                if (product == null)
-                {
-                    return BadRequest(new { message = "Dữ liệu sản phẩm không hợp lệ" });
-                }
+                ProductName = dto.ProductName,
+                CategoryID = dto.CategoryID,
+                SupplierID = dto.SupplierID,
+                Unit = dto.Unit,
+                StockQuantity = dto.StockQuantity,
+                ReorderLevel = dto.ReorderLevel,
+                ImageUrl = dto.ImageUrl
+            };
 
-                // Kiểm tra CategoryID tồn tại
-                var category = await _context.Categories.FindAsync(product.CategoryID);
-                if (category == null)
-                {
-                    return BadRequest(new { message = "Danh mục không tồn tại" });
-                }
+            _context.Products.Add(product);
+            await _context.SaveChangesAsync();
 
-                // Kiểm tra SupplierID tồn tại
-                var supplier = await _context.Suppliers.FindAsync(product.SupplierID);
-                if (supplier == null)
-                {
-                    return BadRequest(new { message = "Nhà cung cấp không tồn tại" });
-                }
+            return Ok(product);
+        }
 
-                // Kiểm tra dữ liệu đầu vào
-                if (string.IsNullOrEmpty(product.ProductName))
-                {
-                    return BadRequest(new { message = "Tên sản phẩm là bắt buộc" });
-                }
+        [HttpPost("upload")]
+        public async Task<IActionResult> UploadImage(IFormFile image)
+        {
+            if (image == null || image.Length == 0)
+                return BadRequest("No file uploaded.");
 
-                if (string.IsNullOrEmpty(product.Unit))
-                {
-                    return BadRequest(new { message = "Đơn vị tính là bắt buộc" });
-                }
+            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+            if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
 
-                if (product.StockQuantity < 0)
-                {
-                    return BadRequest(new { message = "Số lượng tồn kho phải lớn hơn hoặc bằng 0" });
-                }
+            var fileName = Guid.NewGuid().ToString() + Path.GetExtension(image.FileName);
+            var filePath = Path.Combine(uploadsFolder, fileName);
 
-                if (product.ReorderLevel < 0)
-                {
-                    return BadRequest(new { message = "Số lượng tồn kho tối thiểu phải lớn hơn hoặc bằng 0" });
-                }
-
-                // Thêm sản phẩm vào database
-                _context.Products.Add(product);
-                await _context.SaveChangesAsync();
-
-                return CreatedAtAction(nameof(GetProduct), new { id = product.ProductID }, product);
-            }
-            catch (Exception ex)
+            using (var stream = new FileStream(filePath, FileMode.Create))
             {
-                // Log lỗi
-                Console.WriteLine($"Lỗi khi tạo sản phẩm: {ex.Message}");
-                Console.WriteLine($"Stack trace: {ex.StackTrace}");
-                
-                return StatusCode(500, new { message = $"Lỗi khi tạo sản phẩm: {ex.Message}" });
+                await image.CopyToAsync(stream);
             }
+
+            var fileUrl = $"{Request.Scheme}://{Request.Host}/uploads/{fileName}";
+            return Ok(new { url = fileUrl });
         }
 
         // PUT: api/Product/5
@@ -176,6 +154,7 @@ namespace MyWebAPI.Controllers
                 existingProduct.Unit = product.Unit;
                 existingProduct.StockQuantity = product.StockQuantity;
                 existingProduct.ReorderLevel = product.ReorderLevel;
+                existingProduct.ImageUrl = product.ImageUrl;
                 existingProduct.CategoryID = product.CategoryID;
                 existingProduct.SupplierID = product.SupplierID;
                 existingProduct.Category = category;
@@ -287,4 +266,4 @@ namespace MyWebAPI.Controllers
             return _context.Products.Any(e => e.ProductID == id);
         }
     }
-} 
+}

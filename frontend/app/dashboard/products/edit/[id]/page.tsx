@@ -33,6 +33,7 @@ interface Supplier {
   paymentTerms: string
   deliveryTime: number
   status: string
+  imageUrl: string
   products: any[]
   purchaseOrders: any[]
 }
@@ -43,6 +44,7 @@ interface Product {
   unit: string
   stockQuantity: number
   reorderLevel: number
+  imageUrl: string
   supplierID: number
   category: {
     categoryID: number
@@ -57,6 +59,7 @@ const productSchema = z.object({
   unit: z.string().min(1, "Đơn vị tính là bắt buộc"),
   stockQuantity: z.number().min(0, "Số lượng tồn kho phải lớn hơn hoặc bằng 0"),
   reorderLevel: z.number().min(0, "Số lượng tồn kho tối thiểu phải lớn hơn hoặc bằng 0"),
+  imageUrl: z.string().optional(),
   categoryID: z.number().min(1, "Danh mục là bắt buộc"),
   supplierID: z.number().min(1, "Nhà cung cấp là bắt buộc"),
 })
@@ -80,6 +83,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
       unit: "",
       stockQuantity: 0,
       reorderLevel: 0,
+      imageUrl: "",
       categoryID: 0,
       supplierID: 0,
     },
@@ -159,6 +163,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                 unit: form.getValues("unit"),
                 stockQuantity: form.getValues("stockQuantity"),
                 reorderLevel: form.getValues("reorderLevel"),
+                imageUrl: form.getValues("imageUrl"),
                 categoryID: form.getValues("categoryID"),
                 supplierID: form.getValues("supplierID"),
                 Category: {
@@ -178,6 +183,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                     paymentTerms: selectedSupplier.paymentTerms,
                     deliveryTime: selectedSupplier.deliveryTime,
                     status: selectedSupplier.status,
+                    imageUrl: selectedSupplier.imageUrl,
                     products: [],
                     purchaseOrders: []
                 },
@@ -255,6 +261,36 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
     } catch (error) {
       console.error('Lỗi khi cập nhật danh mục:', error);
       toast.error(error instanceof Error ? error.message : 'Không thể cập nhật danh mục');
+    }
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("image", file);
+
+    try {
+      const res = await fetch("http://localhost:5190/api/product/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        throw new Error("Upload failed");
+      }
+
+      const data = await res.json();
+      const imageUrl = data.url;
+
+      // ✅ Gán giá trị ảnh vào form
+      form.setValue("imageUrl", imageUrl, { shouldDirty: true });
+
+      toast.success("Tải ảnh thành công!");
+    } catch (err) {
+      toast.error("Tải ảnh thất bại");
+      console.error(err);
     }
   };
 
@@ -480,6 +516,18 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                     {form.formState.errors.supplierID.message}
                   </p>
                 )}
+              </div>
+              <div className="space-y-2">
+                <label className="block text-sm font-medium">Ảnh đại diện</label>
+                <Input type="file" accept="image/*" onChange={handleFileChange} />
+                {form.watch("imageUrl") && (
+                  <img
+                    src={form.watch("imageUrl")}
+                    alt="Ảnh đại diện"
+                    className="w-40 h-40 object-cover rounded-lg border mt-2"
+                  />
+                )}
+
               </div>
             </div>
             <div className="flex justify-end gap-4">

@@ -188,7 +188,13 @@ export default function PurchaseOrdersPage() {
                 <SelectContent>
                   <SelectItem value="all">Tất cả trạng thái</SelectItem>
                   <SelectItem value="Đang chờ duyệt">Đang chờ duyệt</SelectItem>
-                  <SelectItem value="Đã duyệt">Đã duyệt</SelectItem>
+                  <SelectItem value="Đã gửi email">Đã gửi email</SelectItem>
+                  <SelectItem value="Đã xác nhận">Đã xác nhận</SelectItem>
+                  <SelectItem value="Đang nhận hàng">Đang nhận hàng</SelectItem>
+                  <SelectItem value="Đã nhận hàng">Đã nhận hàng</SelectItem>
+                  <SelectItem value="Đã xuất hóa đơn">Đã xuất hóa đơn</SelectItem>
+                  <SelectItem value="Thanh toán một phần">Thanh toán một phần</SelectItem>
+                  <SelectItem value="Đã thanh toán">Đã thanh toán</SelectItem>
                   <SelectItem value="Đã hủy">Đã hủy</SelectItem>
                 </SelectContent>
               </Select>

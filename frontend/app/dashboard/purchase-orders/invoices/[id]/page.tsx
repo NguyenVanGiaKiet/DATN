@@ -59,7 +59,7 @@ export default function InvoicePage() {
     const [isLoading, setIsLoading] = useState(true)
     const [isCreatingInvoice, setIsCreatingInvoice] = useState(false)
     const [invoiceDate, setInvoiceDate] = useState<Date>(new Date())
-    const [paymentDueDate, setPaymentDueDate] = useState<Date>(addDays(new Date(), 30)) // Mặc định 30 ngày
+    const [dueDate, setDueDate] = useState<Date>(addDays(new Date(), 30)) // Mặc định 30 ngày
     const [showPaymentDialog, setShowPaymentDialog] = useState(false)
     const [paymentAmount, setPaymentAmount] = useState("")
     const [paymentMethod, setPaymentMethod] = useState("Bank Transfer")
@@ -133,7 +133,7 @@ export default function InvoicePage() {
             const invoiceData = {
                 purchaseOrderID: params.id,
                 invoiceDate: invoiceDate.toISOString(),
-                dueDate: paymentDueDate.toISOString(),
+                dueDate: dueDate.toISOString(),
                 totalAmount: purchaseOrder?.totalAmount || 0,
                 paymentStatus: "Chưa thanh toán"
             };
@@ -334,8 +334,8 @@ export default function InvoicePage() {
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium">Ngày đến hạn thanh toán</label>
                                     <DatePicker
-                                        date={paymentDueDate}
-                                        onSelect={setPaymentDueDate}
+                                        date={dueDate}
+                                        onSelect={setDueDate}
                                     />
                                 </div>
                             </div>
@@ -425,7 +425,7 @@ export default function InvoicePage() {
                             <Label htmlFor="paymentDate" className="text-right">
                                 Ngày thanh toán
                             </Label>
-                            <div className="col-span-3">
+                            <div className="col-span-3"> 
                                 <DatePicker
                                     date={paymentDate}
                                     onSelect={setPaymentDate}

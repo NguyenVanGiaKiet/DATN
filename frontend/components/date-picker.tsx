@@ -36,20 +36,29 @@ export function DatePicker({ date, onSelect }: DatePickerProps) {
   )
 
   return (
-    <Popover>
+    <Popover modal={false}>
       <PopoverTrigger asChild>
         <Button
           variant={"outline"}
-          className={cn("w-full justify-start text-left font-normal", !selectedDate && "text-muted-foreground")}
+          className={cn(
+            "w-full justify-start text-left font-normal",
+            !selectedDate && "text-muted-foreground"
+          )}
         >
           <CalendarIcon className="mr-2 h-4 w-4" />
           {selectedDate ? format(selectedDate, "PPP", { locale: vi }) : <span>Chọn ngày</span>}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0">
-        <Calendar mode="single" selected={selectedDate} onSelect={handleSelect} initialFocus locale={vi} />
+        <Calendar
+          mode="single"
+          selected={selectedDate}
+          onSelect={handleSelect}
+          initialFocus
+          locale={vi}
+        />
       </PopoverContent>
     </Popover>
+
   )
 }
-

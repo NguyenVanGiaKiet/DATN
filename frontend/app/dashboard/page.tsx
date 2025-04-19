@@ -14,24 +14,9 @@ export default function DashboardPage() {
       {/* Thống kê tổng quan */}
       <DashboardCards />
       
-      {/* Biểu đồ và thống kê */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
-        <div className="col-span-4">
-          <DashboardCharts />
-        </div>
-        <div className="col-span-3">
-          <OrderStats />
-        </div>
-      </div>
-
-      {/* Đơn hàng gần đây và thông tin nhà cung cấp */}
-      <div className="grid gap-6 md:grid-cols-2">
-        <div className="col-span-1">
-          <RecentOrders />
-        </div>
-        <div className="col-span-1">
-          <SupplierStats />
-        </div>
+        <DashboardCharts />
+        <RecentOrders />
       </div>
     </div>
   )

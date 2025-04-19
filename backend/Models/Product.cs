@@ -28,6 +28,8 @@ namespace MyWebAPI.Models
         [Required]
         public int ReorderLevel { get; set; }
 
+        public string ImageUrl { get; set; }
+
         // Navigation properties
         [ForeignKey("CategoryID")]
         public virtual Category Category { get; set; }
