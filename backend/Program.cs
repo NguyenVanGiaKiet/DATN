@@ -54,6 +54,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:SecretKey"]))
         };
     });
+builder.Services.AddScoped<IAccountService, AccountService>();
 // Cấu hình Authorization
 builder.Services.AddAuthorization();
 

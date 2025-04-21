@@ -21,14 +21,14 @@ namespace MyWebAPI.Models
 
         [Required]
         [StringLength(50)]
-        public string PaymentMethod { get; set; }
+        public string? PaymentMethod { get; set; }
 
         [Required]
         [StringLength(100)]
-        public string ProcessedBy { get; set; }
+        public string? ProcessedBy { get; set; }
 
         // Navigation property without Required attribute
         [ForeignKey("InvoiceID")]
-        public virtual Invoice Invoice { get; set; }    
+        public virtual Invoice? Invoice { get; set; }    
     }
 }

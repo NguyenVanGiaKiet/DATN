@@ -10,7 +10,7 @@ namespace MyWebAPI.Models
         public int ReturnID { get; set; }
 
         [Required]
-        public string PurchaseOrderID { get; set; }
+        public string? PurchaseOrderID { get; set; }
 
         [Required]
         public int ProductID { get; set; }
@@ -24,17 +24,17 @@ namespace MyWebAPI.Models
 
         [Required]
         [StringLength(500)]
-        public string ReturnReason { get; set; }
+        public string? ReturnReason { get; set; }
 
         [Required]
         [StringLength(100)]
-        public string ProcessedBy { get; set; }
+        public string? ProcessedBy { get; set; }
 
         // Navigation properties
         [ForeignKey("PurchaseOrderID")]
-        public virtual PurchaseOrder PurchaseOrder { get; set; }
+        public virtual PurchaseOrder? PurchaseOrder { get; set; }
 
         [ForeignKey("ProductID")]
-        public virtual Product Product { get; set; }
+        public virtual Product? Product { get; set; }
     }
 } 

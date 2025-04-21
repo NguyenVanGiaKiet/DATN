@@ -10,24 +10,24 @@ namespace MyWebAPI.Models
         public int GoodsReceivedID { get; set; }
 
         [Required]
-        public string PurchaseOrderID { get; set; }
+        public string? PurchaseOrderID { get; set; }
 
         [Required]
         public DateTime ReceivedDate { get; set; }
 
         [Required]
         [StringLength(100)]
-        public string Receiver { get; set; }
+        public string? Receiver { get; set; }
 
         [Required]
         [StringLength(20)]
-        public string Status { get; set; }
+        public string? Status { get; set; }
 
         [StringLength(500)]
-        public string Remarks { get; set; }
+        public string? Remarks { get; set; }
 
         // Navigation properties
         [ForeignKey("PurchaseOrderID")]
-        public virtual PurchaseOrder PurchaseOrder { get; set; }
+        public virtual PurchaseOrder? PurchaseOrder { get; set; }
     }
 } 

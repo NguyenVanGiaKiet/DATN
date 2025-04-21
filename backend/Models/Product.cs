@@ -10,7 +10,7 @@ namespace MyWebAPI.Models
 
         [Required]
         [StringLength(100)]
-        public string ProductName { get; set; }
+        public string? ProductName { get; set; }
 
         [Required]
         public int CategoryID { get; set; }
@@ -20,7 +20,7 @@ namespace MyWebAPI.Models
 
         [Required]
         [StringLength(20)]
-        public string Unit { get; set; }
+        public string? Unit { get; set; }
 
         [Required]
         public int StockQuantity { get; set; }
@@ -28,16 +28,16 @@ namespace MyWebAPI.Models
         [Required]
         public int ReorderLevel { get; set; }
 
-        public string ImageUrl { get; set; }
+        public string? ImageUrl { get; set; }
 
         // Navigation properties
         [ForeignKey("CategoryID")]
-        public virtual Category Category { get; set; }
+        public virtual Category? Category { get; set; }
 
         [ForeignKey("SupplierID")]
-        public virtual Supplier Supplier { get; set; }
+        public virtual Supplier? Supplier { get; set; }
 
-        public virtual ICollection<PurchaseOrderDetail> PurchaseOrderDetails { get; set; }
-        public virtual ICollection<ReturnToSupplier> ReturnsToSupplier { get; set; }
+        public virtual ICollection<PurchaseOrderDetail>? PurchaseOrderDetails { get; set; }
+        public virtual ICollection<ReturnToSupplier>? ReturnsToSupplier { get; set; }
     }
 } 

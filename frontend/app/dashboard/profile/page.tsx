@@ -1,8 +1,7 @@
 "use client"
 
 import type React from "react"
-
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -15,6 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "@/components/ui/use-toast"
 import { Loader2 } from "lucide-react"
+import { useAuth } from "@/context/auth-context"
 
 const profileFormSchema = z.object({
   name: z.string().min(2, {
@@ -53,15 +53,17 @@ export default function ProfilePage() {
   const [isLoading, setIsLoading] = useState(false)
   const [isPasswordLoading, setIsPasswordLoading] = useState(false)
   const [avatarSrc, setAvatarSrc] = useState("/placeholder-user.jpg")
+  const [profileData, setProfileData] = useState<any>(null) // Store fetched profile data
+  const [isDataLoading, setIsDataLoading] = useState(true) // Loading state for fetching profile data
 
   const profileForm = useForm<z.infer<typeof profileFormSchema>>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
-      name: "Admin User",
-      email: "admin@example.com",
-      phone: "+84 123 456 789",
-      position: "Quản trị viên",
-      bio: "Quản trị viên hệ thống quản lý mua hàng và nhà cung cấp.",
+      name: "",
+      email: "",
+      phone: "",
+      position: "",
+      bio: "",
     },
   })
 
@@ -73,56 +75,129 @@ export default function ProfilePage() {
       confirmPassword: "",
     },
   })
+  
+  useEffect(() => {
+    async function fetchProfile() {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+      try {
+        const response = await fetch("http://localhost:5190/api/account/me", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }); // Thay bằng API thực tế
+        if (!response.ok) throw new Error("Lỗi khi gọi API")
+        const data = await response.json()
+        setProfileData(data)
+        profileForm.reset(data)
+      } catch (error) {
+        toast({
+          title: "Lỗi",
+          description: "Không thể tải dữ liệu hồ sơ",
+        })
+      } finally {
+        setIsDataLoading(false)
+      }
+    }
 
-  function onProfileSubmit(data: z.infer<typeof profileFormSchema>) {
+    fetchProfile()
+  }, [])
+
+
+  async function onProfileSubmit(data: z.infer<typeof profileFormSchema>) {
     setIsLoading(true)
 
-    // Giả lập API call
-    setTimeout(() => {
-      console.log(data)
+    try {
+      const res = await fetch("http://localhost:5190/api/account/profile", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      })
+
+      if (!res.ok) throw new Error("Cập nhật thất bại")
+
       toast({
         title: "Thành công",
         description: "Thông tin cá nhân đã được cập nhật",
       })
+    } catch (error) {
+      toast({
+        title: "Lỗi",
+        description: "Không thể cập nhật thông tin. Vui lòng thử lại.",
+      })
+    } finally {
       setIsLoading(false)
-    }, 1000)
+    }
   }
 
-  function onPasswordSubmit(data: z.infer<typeof passwordFormSchema>) {
+
+  async function onPasswordSubmit(data: z.infer<typeof passwordFormSchema>) {
     setIsPasswordLoading(true)
 
-    // Giả lập API call
-    setTimeout(() => {
-      console.log(data)
+    try {
+      const res = await fetch("http://localhost:5190/api/account/password", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      })
+
+      if (!res.ok) throw new Error("Đổi mật khẩu thất bại")
+
       toast({
         title: "Thành công",
         description: "Mật khẩu đã được cập nhật",
       })
-      setIsPasswordLoading(false)
+
       passwordForm.reset({
         currentPassword: "",
         newPassword: "",
         confirmPassword: "",
       })
-    }, 1000)
+    } catch (error) {
+      toast({
+        title: "Lỗi",
+        description: "Không thể đổi mật khẩu. Vui lòng thử lại.",
+      })
+    } finally {
+      setIsPasswordLoading(false)
+    }
   }
+
 
   function handleAvatarChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
     if (file) {
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        if (e.target?.result) {
-          setAvatarSrc(e.target.result as string)
+      const formData = new FormData()
+      formData.append("avatar", file)
+
+      // Gửi lên server
+      fetch("http://localhost:5190/api/account/upload-avatar", {
+        method: "POST",
+        body: formData,
+      })
+        .then(async (res) => {
+          if (!res.ok) throw new Error("Upload thất bại")
+          const data = await res.json()
+          setAvatarSrc(data.avatarUrl) // Giả sử server trả về URL mới của avatar
+
           toast({
             title: "Thành công",
             description: "Ảnh đại diện đã được cập nhật",
           })
-        }
-      }
-      reader.readAsDataURL(file)
+        })
+        .catch(() => {
+          toast({
+            title: "Lỗi",
+            description: "Không thể tải lên ảnh đại diện",
+          })
+        })
     }
   }
+
 
   return (
     <div className="flex flex-col gap-6">
@@ -272,6 +347,7 @@ export default function ProfilePage() {
               </CardContent>
             </Card>
           </TabsContent>
+
         </Tabs>
       </div>
     </div>

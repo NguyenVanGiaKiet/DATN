@@ -9,7 +9,7 @@ namespace MyWebAPI.Models
         public int PODetailID { get; set; }
 
         [Required]
-        public string PurchaseOrderID { get; set; }
+        public string? PurchaseOrderID { get; set; }
 
         [Required]
         public int ProductID { get; set; }
@@ -33,9 +33,9 @@ namespace MyWebAPI.Models
 
         // Navigation properties
         [ForeignKey("PurchaseOrderID")]
-        public virtual PurchaseOrder PurchaseOrder { get; set; }
+        public virtual PurchaseOrder? PurchaseOrder { get; set; }
 
         [ForeignKey("ProductID")]
-        public virtual Product Product { get; set; }
+        public virtual Product? Product { get; set; }
     }
 } 

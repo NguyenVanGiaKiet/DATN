@@ -10,7 +10,7 @@ namespace MyWebAPI.Models
         public int InvoiceID { get; set; }
 
         [Required]
-        public string PurchaseOrderID { get; set; }
+        public string? PurchaseOrderID { get; set; }
 
         [Required]
         public DateTime InvoiceDate { get; set; }
@@ -21,15 +21,15 @@ namespace MyWebAPI.Models
 
         [Required]
         [StringLength(20)]
-        public string PaymentStatus { get; set; }
+        public string? PaymentStatus { get; set; }
 
         [Required]
         public DateTime DueDate { get; set; }
 
         // Navigation properties
         [ForeignKey("PurchaseOrderID")]
-        public virtual PurchaseOrder PurchaseOrder { get; set; }
+        public virtual PurchaseOrder? PurchaseOrder { get; set; }
 
-        public virtual ICollection<Payment> Payments { get; set; }
+        public virtual ICollection<Payment>? Payments { get; set; }
     }
 } 

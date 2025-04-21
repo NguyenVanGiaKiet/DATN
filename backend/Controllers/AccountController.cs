@@ -9,7 +9,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 
-namespace YourApp.Controllers
+namespace MyWebAPI.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
@@ -17,11 +17,13 @@ namespace YourApp.Controllers
     {
         private readonly AppDbContext _context;
         private readonly IConfiguration _configuration;
+        private readonly IAccountService _accountService;
 
-        public AccountController(AppDbContext context, IConfiguration configuration)
+        public AccountController(AppDbContext context, IConfiguration configuration, IAccountService accountService)
         {
             _context = context;
             _configuration = configuration;
+            _accountService = accountService;
         }
 
         // Đăng ký tài khoản
@@ -126,6 +128,33 @@ namespace YourApp.Controllers
                 account.Role
             });
         }
+        [Authorize]
+        [HttpPut("profile")]
+        public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileDTO dto)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var result = await _accountService.UpdateProfileAsync(userId, dto);
+
+            if (!result.Success)
+                return BadRequest(result.Message);
+
+            return Ok(result.Data);
+        }
+
+        [Authorize]
+        [HttpPut("password")]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDTO dto)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var result = await _accountService.ChangePasswordAsync(userId, dto);
+
+            if (!result.Success)
+                return BadRequest(result.Message);
+
+            return Ok("Password updated successfully");
+        }
+
+
     }
-    
+
 }

@@ -7,7 +7,7 @@ namespace MyWebAPI.Models
     public class PurchaseOrder
     {
         [Key]
-        public string PurchaseOrderID { get; set; }
+        public string? PurchaseOrderID { get; set; }
 
         [Required]
         public int SupplierID { get; set; }
@@ -24,23 +24,23 @@ namespace MyWebAPI.Models
 
         [Required]
         [StringLength(20)]
-        public string Status { get; set; }
+        public string? Status { get; set; }
 
         [Required]
         [StringLength(100)]
-        public string ApprovedBy { get; set; }
+        public string? ApprovedBy { get; set; }
 
         [StringLength(500)]
-        public string Notes { get; set; }
+        public string? Notes { get; set; }
 
         // Navigation properties
         [ForeignKey("SupplierID")]
-        public virtual Supplier Supplier { get; set; }
+        public virtual Supplier? Supplier { get; set; }
 
-        public virtual ICollection<PurchaseOrderDetail> PurchaseOrderDetails { get; set; }
-        public virtual ICollection<GoodsReceived> GoodsReceived { get; set; }
-        public virtual ICollection<ReturnToSupplier> ReturnsToSupplier { get; set; }
-        public virtual ICollection<Invoice> Invoices { get; set; }
-        public virtual ICollection<ApprovalLog> ApprovalLogs { get; set; }
+        public virtual ICollection<PurchaseOrderDetail>? PurchaseOrderDetails { get; set; }
+        public virtual ICollection<GoodsReceived>? GoodsReceived { get; set; }
+        public virtual ICollection<ReturnToSupplier>? ReturnsToSupplier { get; set; }
+        public virtual ICollection<Invoice>? Invoices { get; set; }
+        public virtual ICollection<ApprovalLog>? ApprovalLogs { get; set; }
     }
 } 
