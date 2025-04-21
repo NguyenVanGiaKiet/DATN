@@ -282,7 +282,7 @@ export default function InvoicePage() {
                         variant="outline"
                         size="icon"
                         className="h-8 w-8"
-                        onClick={() => router.back()}
+                        onClick={() => router.push("/dashboard/purchase-orders")}
                     >
                         <ArrowLeft className="h-4 w-4" />
                     </Button>
@@ -320,7 +320,7 @@ export default function InvoicePage() {
                 <div className="grid gap-6">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Thông tin hóa đơn</CardTitle>
+                            <CardTitle className="text-xl text-primary">Thông tin hóa đơn</CardTitle>
                         </CardHeader>
                         <CardContent>
                             <div className="grid grid-cols-2 gap-6">
@@ -344,7 +344,7 @@ export default function InvoicePage() {
 
                     <Card>
                         <CardHeader>
-                            <CardTitle>Thông tin đơn hàng</CardTitle>
+                            <CardTitle className="text-xl text-primary">Thông tin đơn hàng</CardTitle>
                         </CardHeader>
                         <CardContent>
                             <div className="grid grid-cols-2 gap-4">
@@ -376,7 +376,7 @@ export default function InvoicePage() {
 
                     <Card>
                         <CardHeader>
-                            <CardTitle>Chi tiết sản phẩm</CardTitle>
+                            <CardTitle className="text-xl text-primary">Chi tiết sản phẩm</CardTitle>
                         </CardHeader>
                         <CardContent>
                             <Table>

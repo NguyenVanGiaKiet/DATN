@@ -1,18 +1,15 @@
 import type React from "react"
-import { ThemeProvider } from "@/components/theme-provider"
-import { LanguageProvider } from "@/lib/i18n"
-import { Toaster } from "react-hot-toast"
-import { cn } from "@/lib/utils"
-import "@/app/globals.css"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
+import "./globals.css"
+import { ThemeProvider } from "@/components/theme-provider"
+
 
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Procurement Management System",
-  description: "A comprehensive system for managing procurement processes",
-    generator: 'v0.dev'
+  title: "Acme Inc. - Login & Registration",
+  description: "Login and registration pages for Acme Inc.",
 }
 
 export default function RootLayout({
@@ -21,31 +18,12 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={cn("min-h-screen bg-background font-sans antialiased", inter.className)}>
+    <html lang="en">
+      <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          <LanguageProvider>
-            {children}
-            <Toaster 
-              position="bottom-right"
-              toastOptions={{
-                duration: 5000,
-                style: {
-                  background: '#fff',
-                  color: '#363636',
-                  padding: '16px',
-                  borderRadius: '8px',
-                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
-                }
-              }}
-            />
-          </LanguageProvider>
+          {children}
         </ThemeProvider>
       </body>
     </html>
   )
 }
-
-
-
-import './globals.css'

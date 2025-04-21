@@ -125,7 +125,7 @@ export default function SuppliersPage() {
 
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle>Danh sách Nhà Cung Cấp</CardTitle>
+          <CardTitle className="text-xl text-primary">Danh sách Nhà Cung Cấp</CardTitle>
           <CardDescription>Quản lý và theo dõi tất cả nhà cung cấp trong hệ thống</CardDescription>
         </CardHeader>
         <CardContent>

@@ -438,23 +438,23 @@ export default function EditPurchaseOrderPage({ params }: { params: { id: string
   const getStatusClass = (status: string) => {
     switch (status) {
       case "Đang xử lý":
-        return "bg-yellow-100 text-yellow-800 border-yellow-300"
+        return "bg-yellow-100 text-yellow-800 border-yellow-300 hover:bg-yellow-200 transition-colors"
       case "Đã gửi email":
-        return "bg-blue-100 text-blue-800 border-blue-300"
+        return "bg-blue-100 text-blue-800 border-blue-300 hover:bg-blue-200 transition-colors"
       case "Đã xác nhận":
-        return "bg-green-100 text-green-800 border-green-300"
+        return "bg-green-100 text-green-800 border-green-300 hover:bg-green-200 transition-colors"
       case "Đã hủy":
-        return "bg-red-100 text-red-800 border-red-300"
+        return "bg-red-100 text-red-800 border-red-300 hover:bg-red-200 transition-colors"
       case "Đang giao hàng":
-        return "bg-purple-100 text-purple-800 border-purple-300"
+        return "bg-purple-100 text-purple-800 border-purple-300 hover:bg-purple-200 transition-colors"
       case "Đã nhận hàng":
-        return "bg-emerald-100 text-emerald-800 border-emerald-300"
+        return "bg-emerald-100 text-emerald-800 border-emerald-300 hover:bg-emerald-200 transition-colors"
       case "Đã trả hàng":
-        return "bg-orange-100 text-orange-800 border-orange-300"
+        return "bg-orange-100 text-orange-800 border-orange-300 hover:bg-orange-200 transition-colors"
       case "Đang nhận hàng":
-        return "bg-yellow-100 text-yellow-800 border-yellow-300"
+        return "bg-yellow-100 text-yellow-800 border-yellow-300 hover:bg-yellow-200 transition-colors"
       default:
-        return "bg-gray-100 text-gray-800 border-gray-300"
+        return "bg-gray-100 text-gray-800 border-gray-300 hover:bg-gray-200 transition-colors"
     }
   }
 
@@ -657,11 +657,11 @@ Trân trọng,
           )}
 
           {/* Nút Xác nhận đơn hàng */}
-          {!["Đã xác nhận", "Đang nhận hàng", "Đã nhận hàng"].includes(purchaseOrder?.status || "") && (
+          {(purchaseOrder?.status === "Đang xử lý" || purchaseOrder?.status === "Đã gửi email") && (
             <Button
               variant={purchaseOrder?.status === "Đã gửi email" ? "default" : "outline"}
               onClick={handleConfirmOrder}
-              disabled={isConfirming || purchaseOrder?.status === "Đã xác nhận" || purchaseOrder?.status === "Đã hủy"}
+              disabled={isConfirming}
             >
               <CheckCircle className="mr-2 h-4 w-4" />
               {isConfirming ? "Đang xác nhận..." : "Xác nhận đơn hàng"}

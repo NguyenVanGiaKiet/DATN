@@ -342,7 +342,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
 
       <Card>
         <CardHeader>
-          <CardTitle>Thông tin Sản phẩm</CardTitle>
+          <CardTitle className="text-xl text-primary">Thông tin Sản phẩm</CardTitle>
           <CardDescription>Cập nhật thông tin chi tiết về sản phẩm</CardDescription>
         </CardHeader>
         <CardContent>

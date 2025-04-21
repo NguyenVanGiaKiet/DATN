@@ -5,7 +5,7 @@ import type React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { BarChart3, Home, Package, RefreshCcw, ShoppingCart, Truck, CreditCard, CheckCircle, Settings } from "lucide-react"
+import { BarChart3, Home, Package,ShoppingCart, Truck } from "lucide-react"
 import { useTranslation } from "@/lib/i18n"
 
 interface MainNavProps extends React.HTMLAttributes<HTMLElement> {}

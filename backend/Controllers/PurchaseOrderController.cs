@@ -249,6 +249,14 @@ namespace MyWebAPI.Controllers
                 if (purchaseOrderData.TryGetProperty("notes", out var notesElement))
                     existingOrder.Notes = notesElement.GetString();
 
+                if (purchaseOrderData.TryGetProperty("totalAmount", out var totalAmountElement))
+                    existingOrder.TotalAmount = totalAmountElement.GetDecimal();
+
+                if (purchaseOrderData.TryGetProperty("status", out var statusElement))
+                    existingOrder.Status = statusElement.GetString();
+
+                if (purchaseOrderData.TryGetProperty("approvedBy", out var approvedByElement))
+                    existingOrder.ApprovedBy = approvedByElement.GetString();
                 var detailsToRemove = existingOrder.PurchaseOrderDetails.ToList();
                 foreach (var detail in detailsToRemove)
                 {
@@ -301,24 +309,6 @@ namespace MyWebAPI.Controllers
                     }
                 }
 
-                // Kiểm tra nếu có sản phẩm với số lượng đặt < số lượng nhận
-                if (hasInvalidQuantity)
-                {
-                    return BadRequest(new { message = $"Không thể cập nhật số lượng đặt bé hơn số lượng đã nhận cho sản phẩm: {invalidProductName}" });
-                }
-
-                // Cập nhật tổng giá trị và trạng thái
-                existingOrder.TotalAmount = totalValue;
-
-                // Cập nhật trạng thái dựa trên việc so sánh số lượng
-                if (allItemsReceived && !hasUnreceivedItems)
-                {
-                    existingOrder.Status = "Đã nhận hàng";
-                }
-                else if (hasUnreceivedItems)
-                {
-                    existingOrder.Status = "Đang nhận hàng";
-                }
 
                 await _context.SaveChangesAsync();
 

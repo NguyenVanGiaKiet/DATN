@@ -1,0 +1,10 @@
+{
+    "dashboard": "Dashboard",
+    "purchaseOrders": "Purchase Orders",
+    "suppliers": "Suppliers",
+    "products": "Products",
+    "goodsReceived": "Goods Received",
+    "returns": "Returns",
+    "contracts": "Contracts",
+    "reports": "Reports"
+}

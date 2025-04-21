@@ -98,27 +98,27 @@ export default function PurchaseOrdersPage() {
   const getStatusClass = (status: string) => {
     switch (status) {
       case "Đang xử lý":
-        return "bg-yellow-100 text-yellow-800 border-yellow-300"
+        return "bg-yellow-100 text-yellow-800 border-yellow-300 hover:bg-yellow-200 transition-colors"
       case "Đã gửi email":
-        return "bg-blue-100 text-blue-800 border-blue-300"
+        return "bg-blue-100 text-blue-800 border-blue-300 hover:bg-blue-200 transition-colors"
       case "Đã xác nhận":
-        return "bg-green-100 text-green-800 border-green-300"
+        return "bg-green-100 text-green-800 border-green-300 hover:bg-green-200 transition-colors"
       case "Đã hủy":
-        return "bg-red-100 text-red-800 border-red-300"
+        return "bg-red-100 text-red-800 border-red-300 hover:bg-red-200 transition-colors"
       case "Đang giao hàng":
-        return "bg-purple-100 text-purple-800 border-purple-300"
+        return "bg-purple-100 text-purple-800 border-purple-300 hover:bg-purple-200 transition-colors"
       case "Đã nhận hàng":
-        return "bg-emerald-100 text-emerald-800 border-emerald-300"
+        return "bg-emerald-100 text-emerald-800 border-emerald-300 hover:bg-emerald-200 transition-colors"
       case "Đã trả hàng":
-        return "bg-orange-100 text-orange-800 border-orange-300"
+        return "bg-orange-100 text-orange-800 border-orange-300 hover:bg-orange-200 transition-colors"
       case "Đang nhận hàng":
-        return "bg-yellow-100 text-yellow-800 border-yellow-300"
+        return "bg-yellow-100 text-yellow-800 border-yellow-300 hover:bg-yellow-200 transition-colors"
       case "Đã xuất hóa đơn":
-        return "bg-yellow-100 text-yellow-800 border-yellow-300"
+        return "bg-yellow-100 text-yellow-800 border-yellow-300 hover:bg-yellow-200 transition-colors"
       case "Đã thanh toán":
-        return "bg-green-100 text-green-800 border-green-300"
+        return "bg-green-100 text-green-800 border-green-300 hover:bg-green-200 transition-colors"
       default:
-        return "bg-gray-100 text-gray-800 border-gray-300"
+        return "bg-gray-100 text-gray-800 border-gray-300 hover:bg-gray-200 transition-colors"
     }
   }
 
@@ -163,7 +163,7 @@ export default function PurchaseOrdersPage() {
 
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle>Danh Sách Đơn Hàng</CardTitle>
+          <CardTitle className="text-xl text-primary">Danh Sách Đơn Hàng</CardTitle>
           <CardDescription>Quản lý và theo dõi tất cả đơn đặt hàng trong hệ thống</CardDescription>
         </CardHeader>
         <CardContent>
@@ -189,6 +189,7 @@ export default function PurchaseOrdersPage() {
                   <SelectItem value="all">Tất cả trạng thái</SelectItem>
                   <SelectItem value="Đang chờ duyệt">Đang chờ duyệt</SelectItem>
                   <SelectItem value="Đã gửi email">Đã gửi email</SelectItem>
+                  <SelectItem value="Đang xử lý">Đang xử lý</SelectItem>
                   <SelectItem value="Đã xác nhận">Đã xác nhận</SelectItem>
                   <SelectItem value="Đang nhận hàng">Đang nhận hàng</SelectItem>
                   <SelectItem value="Đã nhận hàng">Đã nhận hàng</SelectItem>

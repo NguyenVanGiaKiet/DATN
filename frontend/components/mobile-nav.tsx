@@ -40,24 +40,6 @@ export function MobileNav() {
       active: pathname?.startsWith("/dashboard/products"),
     },
     {
-      href: "/dashboard/goods-received",
-      label: t("goodsReceived"),
-      icon: ClipboardList,
-      active: pathname?.startsWith("/dashboard/goods-received"),
-    },
-    {
-      href: "/dashboard/returns",
-      label: t("returns"),
-      icon: RefreshCcw,
-      active: pathname?.startsWith("/dashboard/returns"),
-    },
-    {
-      href: "/dashboard/contracts",
-      label: t("contracts"),
-      icon: FileText,
-      active: pathname?.startsWith("/dashboard/contracts"),
-    },
-    {
       href: "/dashboard/reports",
       label: t("reports"),
       icon: BarChart3,

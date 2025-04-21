@@ -1,37 +1,18 @@
 "use client"
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
-
-// Translations
-const translations = {
-  en: {
-    dashboard: "Dashboard",
-    purchaseOrders: "Purchase Orders",
-    suppliers: "Suppliers",
-    products: "Products",
-    goodsReceived: "Goods Received",
-    returns: "Returns",
-    contracts: "Contracts",
-    reports: "Reports",
-    // Add more translations as needed
-  },
-  vi: {
-    dashboard: "Tổng quan",
-    purchaseOrders: "Đơn hàng mua",
-    suppliers: "Nhà cung cấp",
-    products: "Sản phẩm",
-    goodsReceived: "Hàng nhập kho",
-    returns: "Trả hàng",
-    contracts: "Hợp đồng",
-    reports: "Báo cáo",
-    // Add more translations as needed
-  },
-}
+import en from "./locales/en.json"  // Import English translations
+import vi from "./locales/vi.json"  // Import Vietnamese translations
 
 type LanguageContextType = {
   language: string
   setLanguage: (lang: string) => void
   t: (key: string) => string
+}
+
+const translations = {
+  en,
+  vi,
 }
 
 const LanguageContext = createContext<LanguageContextType>({

@@ -11,7 +11,7 @@ import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, PieChart, Pie, Cell
 } from "recharts"
 
-const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8"]
+const COLORS = ["hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-3))", "hsl(var(--chart-4))", "hsl(var(--chart-5))"]
 
 interface PaymentData {
   paymentDate: string;
@@ -97,7 +97,7 @@ export function DashboardCharts() {
   return (
     <Card className="col-span-4">
       <CardHeader>
-        <CardTitle>Thống kê</CardTitle>
+        <CardTitle className="text-xl text-primary">Thống kê</CardTitle>
       </CardHeader>
       <CardContent className="pl-2">
         <Tabs defaultValue="spending">
@@ -115,7 +115,7 @@ export function DashboardCharts() {
                     formatter={(value) => [`${formatCurrency(Number(value))}`, "Số tiền"]}
                     labelFormatter={(label) => `Tháng: ${label}`}
                   />
-                  <Bar dataKey="amount" fill="#0088FE" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="amount" fill="hsl(var(--chart-1))" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>

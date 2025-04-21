@@ -140,7 +140,7 @@ export default function ProductsPage() {
 
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle>Danh sách Sản Phẩm</CardTitle>
+          <CardTitle className="text-xl text-primary">Danh sách Sản Phẩm</CardTitle>
           <CardDescription>Quản lý và theo dõi tất cả sản phẩm trong hệ thống</CardDescription>
         </CardHeader>
         <CardContent>

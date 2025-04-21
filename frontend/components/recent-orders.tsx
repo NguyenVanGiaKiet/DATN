@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useTranslation } from "@/lib/i18n"
 
 // Kiểu dữ liệu cho mỗi đơn hàng
 interface PurchaseOrder {
@@ -14,7 +15,7 @@ interface PurchaseOrder {
 
 export function RecentOrders() {
   const [orders, setOrders] = useState<PurchaseOrder[]>([])
-
+  const { t } = useTranslation()
   useEffect(() => {
     // Thay link này bằng URL API thật của bạn
     fetch("http://localhost:5190/api/purchaseorder/recent")
@@ -26,7 +27,7 @@ export function RecentOrders() {
   return (
     <Card className="col-span-3">
       <CardHeader>
-        <CardTitle>Recent Purchase Orders</CardTitle>
+        <CardTitle className="text-xl text-primary">Recent Purchase Orders</CardTitle>
         <CardDescription>Latest 5 purchase orders created in the system</CardDescription>
       </CardHeader>
       <CardContent>

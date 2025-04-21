@@ -25,7 +25,7 @@ import { Download, FileDown, Printer } from "lucide-react"
 import { getMonthlySpendingData, getSupplierPerformanceData, getProductCategoryData } from "@/lib/actions"
 import { exportToCSV, exportToPDF } from "@/lib/export-utils"
 
-const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8"]
+const COLORS = ["hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-3))", "hsl(var(--chart-4))", "hsl(var(--chart-5))"]
 
 export default function ReportsPage() {
   const [reportType, setReportType] = useState("spending")
@@ -143,7 +143,7 @@ export default function ReportsPage() {
       <div className="grid gap-6 md:grid-cols-3">
         <Card className="md:col-span-3">
           <CardHeader>
-            <CardTitle>Bộ lọc báo cáo</CardTitle>
+            <CardTitle className="text-xl text-primary">Bộ lọc báo cáo</CardTitle>
             <CardDescription>Chọn tham số để tạo báo cáo</CardDescription>
           </CardHeader>
           <CardContent>
@@ -184,7 +184,7 @@ export default function ReportsPage() {
             {reportType === "spending" && (
               <Card className="md:col-span-3">
                 <CardHeader>
-                  <CardTitle>Phân tích chi tiêu theo tháng</CardTitle>
+                  <CardTitle className="text-xl text-primary">Phân tích chi tiêu theo tháng</CardTitle>
                   <CardDescription>Tổng quan về chi tiêu mua hàng theo thời gian</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -196,7 +196,7 @@ export default function ReportsPage() {
                         <YAxis tickFormatter={formatCurrencyShort} />
                         <Tooltip formatter={(value) => [formatCurrencyShort(Number(value)), "Chi tiêu"]} />
                         <Legend />
-                        <Bar dataKey="amount" fill="#0088FE" name="Chi tiêu (VND)" />
+                        <Bar dataKey="amount" fill="hsl(var(--chart-1))" name="Chi tiêu (VND)" />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -207,7 +207,7 @@ export default function ReportsPage() {
             {reportType === "suppliers" && (
               <Card className="md:col-span-3">
                 <CardHeader>
-                  <CardTitle>Phân tích hiệu suất nhà cung cấp</CardTitle>
+                  <CardTitle className="text-xl text-primary">Phân tích hiệu suất nhà cung cấp</CardTitle>
                   <CardDescription>So sánh các chỉ số hiệu suất chính của nhà cung cấp</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -232,7 +232,7 @@ export default function ReportsPage() {
             {reportType === "categories" && (
               <Card className="md:col-span-3">
                 <CardHeader>
-                  <CardTitle>Phân bố danh mục sản phẩm</CardTitle>
+                  <CardTitle className="text-xl text-primary">Phân bố danh mục sản phẩm</CardTitle>
                   <CardDescription>Phân tích mua hàng theo danh mục sản phẩm</CardDescription>
                 </CardHeader>
                 <CardContent>
