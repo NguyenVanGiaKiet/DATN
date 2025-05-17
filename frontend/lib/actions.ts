@@ -32,7 +32,7 @@ export async function getSupplierPerformanceData() {
         supplier?: { supplierName?: string };
         expectedDeliveryDate: string;
         orderDate: string;
-        purchaseOrderDetails?: { receivedQuantity?: number; returnQuantity?: number }[];
+        purchaseOrderDetails?: { productID: number; unitPrice: number; receivedQuantity?: number; returnQuantity?: number }[];
     }
 
     interface SupplierPerformance {
@@ -42,15 +42,44 @@ export async function getSupplierPerformanceData() {
         count: number;
     }
 
+    // Tính toán điểm cạnh tranh về giá
+    // 1. Gom tất cả chi tiết đơn hàng lại
+    const allDetails: { supplier: string; productId: number; price: number }[] = [];
+    for (const order of orders) {
+        const supplier = order.supplier?.supplierName || "Không rõ";
+        for (const detail of order.purchaseOrderDetails || []) {
+            if (detail.productID && typeof detail.unitPrice === 'number') {
+                allDetails.push({ supplier, productId: detail.productID, price: detail.unitPrice });
+            }
+        }
+    }
+    // 2. Tìm giá thấp nhất cho từng sản phẩm
+    const minPriceByProduct: Record<number, number> = {};
+    for (const detail of allDetails) {
+        if (minPriceByProduct[detail.productId] === undefined || detail.price < minPriceByProduct[detail.productId]) {
+            minPriceByProduct[detail.productId] = detail.price;
+        }
+    }
+    // 3. Đếm số lần mỗi nhà cung cấp bán giá thấp nhất
+    const supplierPriceStats: Record<string, { bestPriceCount: number, total: number }> = {};
+    for (const detail of allDetails) {
+        if (!supplierPriceStats[detail.supplier]) supplierPriceStats[detail.supplier] = { bestPriceCount: 0, total: 0 };
+        supplierPriceStats[detail.supplier].total += 1;
+        if (detail.price === minPriceByProduct[detail.productId]) {
+            supplierPriceStats[detail.supplier].bestPriceCount += 1;
+        }
+    }
+
+    // 4. Gom nhóm các chỉ số đánh giá khác
     const grouped = orders.reduce((acc: Record<string, SupplierPerformance>, order: Order) => {
         const name = order.supplier?.supplierName || "Không rõ";
-        if (!acc[name]) acc[name] = { onTime: 0, quality: 0, price: 100, count: 0 };
+        if (!acc[name]) acc[name] = { onTime: 0, quality: 0, price: 0, count: 0 };
 
         const expected = new Date(order.expectedDeliveryDate);
         const actual = new Date(order.orderDate);
         const deliveredOnTime = actual <= expected;
 
-        const detail = order.purchaseOrderDetails?.[0] || {};
+        const detail = order.purchaseOrderDetails?.[0] || { receivedQuantity: 0, returnQuantity: 0 };
         const goodQuality = (detail.receivedQuantity || 0) > 0 && (detail.returnQuantity || 0) === 0;
 
         acc[name].onTime += deliveredOnTime ? 1 : 0;
@@ -59,12 +88,17 @@ export async function getSupplierPerformanceData() {
         return acc;
     }, {} as Record<string, SupplierPerformance>);
 
-    return (Object.entries(grouped) as [string, SupplierPerformance][]).map(([name, data]) => ({
-        name,
-        onTime: Math.round((data.onTime / data.count) * 100),
-        quality: Math.round((data.quality / data.count) * 100),
-        price: data.price,
-    }))
+    // 5. Trả về dữ liệu tổng hợp, tính điểm price
+    return (Object.entries(grouped) as [string, SupplierPerformance][]).map(([name, data]) => {
+        const priceStat = supplierPriceStats[name];
+        const priceScore = priceStat && priceStat.total > 0 ? Math.round((priceStat.bestPriceCount / priceStat.total) * 100) : 0;
+        return {
+            name,
+            onTime: Math.round((data.onTime / data.count) * 100),
+            quality: Math.round((data.quality / data.count) * 100),
+            price: priceScore,
+        }
+    })
 }
 
 export async function getProductCategoryData() {

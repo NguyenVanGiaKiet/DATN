@@ -40,14 +40,27 @@ export default function ReportsPage() {
     const fetchData = async () => {
       setLoading(true)
       try {
-        // Trong thực tế, các hàm này sẽ nhận tham số fromDate và toDate
-        const spendingData = await getMonthlySpendingData()
-        const performanceData = await getSupplierPerformanceData()
-        const categoryData = await getProductCategoryData()
+        // Lấy dữ liệu gốc
+        const spendingDataRaw = await getMonthlySpendingData()
+        const performanceDataRaw = await getSupplierPerformanceData()
+        const categoryDataRaw = await getProductCategoryData()
 
-        setMonthlySpendingData(spendingData)
-        setSupplierPerformanceData(performanceData)
-        setProductCategoryData(categoryData)
+        // Lọc dữ liệu theo ngày ở frontend
+        const filteredSpending = spendingDataRaw.filter((item: any) => {
+          // item.name dạng MM/YYYY
+          const [month, year] = item.name.split('/').map(Number)
+          const date = new Date(year, month - 1)
+          return date >= fromDate && date <= toDate
+        })
+        const filteredPerformance = performanceDataRaw.filter((item: any) => {
+          // Không có thông tin ngày, nên không lọc được, giữ nguyên
+          return true
+        })
+        const filteredCategory = categoryDataRaw // Không có ngày, giữ nguyên
+
+        setMonthlySpendingData(filteredSpending)
+        setSupplierPerformanceData(filteredPerformance)
+        setProductCategoryData(filteredCategory)
       } catch (error) {
         console.error("Error fetching report data:", error)
       } finally {
@@ -99,7 +112,52 @@ export default function ReportsPage() {
         break
     }
 
-    exportToPDF(data, filename)
+    // Thực tế xuất PDF bằng jsPDF
+    if (data.length === 0) {
+      alert("Không có dữ liệu để xuất PDF!")
+      return
+    }
+    import('jspdf').then(jsPDFModule => {
+      const doc = new jsPDFModule.jsPDF({ orientation: 'landscape' })
+      const pageWidth = doc.internal.pageSize.getWidth()
+      let y = 20
+      // Tiêu đề căn giữa
+      doc.setFontSize(18)
+      doc.text(filename.toUpperCase(), pageWidth / 2, y, { align: 'center' })
+      y += 10
+      doc.setFontSize(12)
+      const headers = Object.keys(data[0])
+      // Tạo bảng header
+      const colWidths = headers.map(() => pageWidth / headers.length - 2)
+      let x = 10
+      y += 10
+      // Header row
+      headers.forEach((header, idx) => {
+        doc.text(header, x, y, { maxWidth: colWidths[idx] })
+        x += colWidths[idx]
+      })
+      y += 8
+      // Data rows
+      data.forEach(row => {
+        x = 10
+        headers.forEach((header, idx) => {
+          let cell = row[header] !== undefined && row[header] !== null ? String(row[header]) : ''
+          // Nếu dài quá thì cắt hoặc xuống dòng
+          if (cell.length > 30) cell = cell.slice(0, 27) + '...'
+          doc.text(cell, x, y, { maxWidth: colWidths[idx] })
+          x += colWidths[idx]
+        })
+        y += 8
+        // Nếu gần cuối trang thì sang trang mới
+        if (y > doc.internal.pageSize.getHeight() - 15) {
+          doc.addPage()
+          y = 20
+        }
+      })
+      doc.save(`${filename}.pdf`)
+    }).catch(() => {
+      alert('Chưa cài jsPDF, hãy chạy: npm install jspdf')
+    })
   }
 
   const handlePrint = () => {
@@ -188,18 +246,22 @@ export default function ReportsPage() {
                   <CardDescription>Tổng quan về chi tiêu mua hàng theo thời gian</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-[400px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={monthlySpendingData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" />
-                        <YAxis tickFormatter={formatCurrencyShort} />
-                        <Tooltip formatter={(value) => [formatCurrencyShort(Number(value)), "Chi tiêu"]} />
-                        <Legend />
-                        <Bar dataKey="amount" fill="hsl(var(--chart-1))" name="Chi tiêu (VND)" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
+                  {monthlySpendingData.length === 0 ? (
+                    <div className="flex items-center justify-center h-[400px] text-gray-400">Không có dữ liệu</div>
+                  ) : (
+                    <div className="h-[400px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={monthlySpendingData}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="name" />
+                          <YAxis tickFormatter={formatCurrencyShort} />
+                          <Tooltip formatter={(value) => [formatCurrencyShort(Number(value)), "Chi tiêu"]} />
+                          <Legend />
+                          <Bar dataKey="amount" fill="hsl(var(--chart-1))" name="Chi tiêu (VND)" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}
@@ -211,20 +273,24 @@ export default function ReportsPage() {
                   <CardDescription>So sánh các chỉ số hiệu suất chính của nhà cung cấp</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-[400px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={supplierPerformanceData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" />
-                        <YAxis />
-                        <Tooltip />
-                        <Legend />
-                        <Line type="monotone" dataKey="onTime" stroke="#0088FE" name="Giao hàng đúng hẹn %" />
-                        <Line type="monotone" dataKey="quality" stroke="#00C49F" name="Chất lượng %" />
-                        <Line type="monotone" dataKey="price" stroke="#FFBB28" name="Cạnh tranh về giá %" />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
+                  {supplierPerformanceData.length === 0 ? (
+                    <div className="flex items-center justify-center h-[400px] text-gray-400">Không có dữ liệu</div>
+                  ) : (
+                    <div className="h-[400px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={supplierPerformanceData}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="name" />
+                          <YAxis />
+                          <Tooltip />
+                          <Legend />
+                          <Line type="monotone" dataKey="onTime" stroke="#0088FE" name="Giao hàng đúng hẹn %" />
+                          <Line type="monotone" dataKey="quality" stroke="#00C49F" name="Chất lượng %" />
+                          <Line type="monotone" dataKey="price" stroke="#FFBB28" name="Cạnh tranh về giá %" />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}
@@ -236,28 +302,32 @@ export default function ReportsPage() {
                   <CardDescription>Phân tích mua hàng theo danh mục sản phẩm</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-[400px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={productCategoryData}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={false}
-                          label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                          outerRadius={150}
-                          fill="#8884d8"
-                          dataKey="value"
-                        >
-                          {productCategoryData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip formatter={(value) => [`${value}%`, "Phần trăm"]} />
-                        <Legend />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
+                  {productCategoryData.length === 0 ? (
+                    <div className="flex items-center justify-center h-[400px] text-gray-400">Không có dữ liệu</div>
+                  ) : (
+                    <div className="h-[400px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={productCategoryData}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                            outerRadius={150}
+                            fill="#8884d8"
+                            dataKey="value"
+                          >
+                            {productCategoryData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip formatter={(value) => [`${value}%`, "Phần trăm"]} />
+                          <Legend />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}

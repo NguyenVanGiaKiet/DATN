@@ -15,6 +15,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ArrowLeft, Plus, Trash2, Loader2, Save, Mail } from "lucide-react"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import toast from "react-hot-toast"
+import { useNotification } from "@/components/notification-context";
+import { v4 as uuidv4 } from "uuid";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -55,6 +57,10 @@ const orderItemSchema = z.object({
     })
     .min(0, "Đơn giá không được âm"),
   totalPrice: z.number().optional(),
+  unit: z.string({
+    required_error: "Vui lòng nhập đơn vị",
+  }),
+
 })
 
 const formSchema = z.object({
@@ -84,6 +90,9 @@ export default function CreatePurchaseOrderPage() {
   const [hasChanges, setHasChanges] = useState(false)
   const [createdOrderId, setCreatedOrderId] = useState<string | null>(null)
   const [isSendingEmail, setIsSendingEmail] = useState(false)
+
+  // Lấy hàm addNotification từ context
+  const { addNotification } = useNotification();
 
   // Khởi tạo form
   const form = useForm<FormValues>({
@@ -168,7 +177,7 @@ export default function CreatePurchaseOrderPage() {
 
   const handleSendEmail = async () => {
     if (!createdOrderId) return;
-    
+
     try {
       setIsSendingEmail(true);
       const response = await fetch(`http://localhost:5190/api/purchaseorder/${createdOrderId}/send-email`, {
@@ -229,7 +238,16 @@ export default function CreatePurchaseOrderPage() {
 
       const result = await response.json()
       setCreatedOrderId(result.purchaseOrderID)
-      
+
+      // Gửi notification lên NotificationCenter
+      addNotification({
+        id: uuidv4(),
+        title: "Tạo đơn hàng",
+        message: `Đơn hàng #${result.purchaseOrderID} đã được tạo thành công với tổng giá trị ${totalAmount.toLocaleString('vi-VN')} VND.`,
+        date: new Date(),
+        read: false,
+      });
+
       toast.success(`Đơn hàng ${result.purchaseOrderID} đã được tạo thành công với tổng giá trị ${totalAmount.toLocaleString('vi-VN')} VND.`, {
         duration: 5000
       })
@@ -248,8 +266,9 @@ export default function CreatePurchaseOrderPage() {
   const handleProductChange = (productID: string, index: number) => {
     const product = products.find((p) => p.productID.toString() === productID)
     if (product) {
-      // Đặt số lượng mặc định là 1 và giá là 0
+      // Đặt số lượng mặc định là 1, đơn vị theo sản phẩm, giá là 0
       form.setValue(`items.${index}.quantity`, 1)
+      form.setValue(`items.${index}.unit`, product.unit)
       form.setValue(`items.${index}.unitPrice`, 0)
       form.setValue(`items.${index}.totalPrice`, 0)
 
@@ -419,6 +438,7 @@ export default function CreatePurchaseOrderPage() {
                       <TableRow>
                         <TableHead className="font-medium">Sản phẩm</TableHead>
                         <TableHead className="font-medium">Số lượng</TableHead>
+                        <TableHead className="font-medium">Đơn vị</TableHead>
                         <TableHead className="font-medium">Đơn giá</TableHead>
                         <TableHead className="font-medium">Thành tiền</TableHead>
                         <TableHead></TableHead>
@@ -481,6 +501,25 @@ export default function CreatePurchaseOrderPage() {
                               )}
                             />
                           </TableCell>
+                          {/* Đơn vị */}
+                          <TableCell>
+                            <FormField
+                              control={form.control}
+                              name={`items.${index}.unit`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormControl>
+                                    <Input
+                                      {...field}
+                                      className="h-9 focus:ring-1 focus:ring-primary"
+                                      placeholder="Đơn vị"
+                                    />
+                                  </FormControl>
+                                  <FormMessage className="text-xs" />
+                                </FormItem>
+                              )}
+                            />
+                          </TableCell>
                           <TableCell>
                             <FormField
                               control={form.control}
@@ -526,7 +565,7 @@ export default function CreatePurchaseOrderPage() {
                 <Button
                   variant="outline"
                   type="button"
-                  onClick={() => append({ productID: "", quantity: 1, unitPrice: 0, totalPrice: 0 })}
+                  onClick={() => append({ productID: "", quantity: 1, unit: "", unitPrice: 0, totalPrice: 0 })}
                   className="w-full border-dashed hover:border-primary hover:bg-primary/5"
                 >
                   <Plus className="mr-2 h-4 w-4" />
@@ -554,8 +593,8 @@ export default function CreatePurchaseOrderPage() {
                     )}
                   </Button>
                   {createdOrderId && (
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       onClick={handleSendEmail}
                       disabled={isSendingEmail}
                     >

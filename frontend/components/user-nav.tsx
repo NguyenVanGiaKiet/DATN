@@ -13,20 +13,27 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { LogOut, Settings, User } from "lucide-react"
-import { useRouter } from "next/navigation" // thêm dòng này
-import { useEffect, useState } from "react"  // thêm dòng này
+import { useRouter } from "next/navigation" 
+import { useEffect, useState } from "react"  
+import { useAuth } from "@/context/auth-context"
 
-export function UserNav()  {
-  const [user, setUser] = useState<{ username: string, email: string } | null>(null) // state để lưu thông tin người dùng
+export function UserNav() {
+  const [user, setUser] = useState<{ username: string, email: string, avatar: string } | null>(null) 
   const [loading, setLoading] = useState(true)
   const router = useRouter()
+  const { logout } = useAuth()
 
   // Lấy thông tin người dùng
   useEffect(() => {
     const fetchUser = async () => {
-      const token = localStorage.getItem("token") // lấy token từ localStorage
+      const token = localStorage.getItem("token") 
+      console.log("[UserNav] fetchUser", { token, pathname: window.location.pathname });
       if (!token) {
-        router.push("/Login")
+        if (window.location.pathname !== "/Login") {
+          console.log("[UserNav] No token, redirecting to /Login");
+          router.push("/Login")
+        }
+        setLoading(false)
         return
       }
 
@@ -39,13 +46,19 @@ export function UserNav()  {
         })
         if (response.ok) {
           const data = await response.json()
-          setUser(data) // Lưu thông tin người dùng vào state
+          setUser(data) 
+          console.log("[UserNav] User fetched", data)
         } else {
-          router.push("/Login") // Nếu không có dữ liệu người dùng, điều hướng đến đăng nhập
+          if (window.location.pathname !== "/Login") {
+            console.log("[UserNav] Invalid token, redirecting to /Login")
+            router.push("/Login")
+          }
         }
       } catch (error) {
-        console.error("Failed to fetch user:", error)
-        router.push("/Login")
+        console.error("[UserNav] Failed to fetch user:", error)
+        if (window.location.pathname !== "/Login") {
+          router.push("/Login")
+        }
       } finally {
         setLoading(false)
       }
@@ -55,19 +68,22 @@ export function UserNav()  {
   }, [router])
 
   const handleLogout = () => {
-    // Xóa token khỏi localStorage
-    localStorage.removeItem("token")
-    router.push("/Login")
+    logout()
   }
-  
-  if (loading) return <div>Loading...</div> // Nếu đang tải, hiển thị loading
+
+  if (loading) return <div>Loading...</div> 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-8 w-8">
-            <AvatarImage src="/placeholder-user.jpg" alt="User" />
-            <AvatarFallback>{user?.username.charAt(0).toUpperCase()}</AvatarFallback>
+            <AvatarImage
+              src={user?.avatar || "/placeholder-user.jpg"}
+              alt={user?.username || "User"}
+            />
+            <AvatarFallback>
+              {user?.username?.charAt(0).toUpperCase()}
+            </AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
@@ -82,8 +98,8 @@ export function UserNav()  {
         <DropdownMenuGroup>
           <DropdownMenuItem asChild>
             <Link href="/dashboard/profile">
-            <User className="mr-2 h-4 w-4" />
-            <span >Profile</span>
+              <User className="mr-2 h-4 w-4" />
+              <span >Profile</span>
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
@@ -94,14 +110,12 @@ export function UserNav()  {
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-            <Link href="/Login" onClick={handleLogout}>
-              <LogOut className="mr-2 h-4 w-4"/>
-              <span>Log out</span>
-            </Link>
+        <DropdownMenuItem onClick={handleLogout}>
+          <LogOut className="mr-2 h-4 w-4" />
+          <span>Log out</span>
         </DropdownMenuItem>
+
       </DropdownMenuContent>
     </DropdownMenu>
   )
 }
-

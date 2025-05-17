@@ -187,7 +187,6 @@ export default function PurchaseOrdersPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tất cả trạng thái</SelectItem>
-                  <SelectItem value="Đang chờ duyệt">Đang chờ duyệt</SelectItem>
                   <SelectItem value="Đã gửi email">Đã gửi email</SelectItem>
                   <SelectItem value="Đang xử lý">Đang xử lý</SelectItem>
                   <SelectItem value="Đã xác nhận">Đã xác nhận</SelectItem>

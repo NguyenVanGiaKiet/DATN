@@ -53,7 +53,16 @@ export function RegisterForm({ className, ...props }: React.ComponentPropsWithou
             setIsLoading(false) // 👈 Dừng loading
         }
     }
-
+    if (isLoading) {
+        return (
+          <div className="flex justify-center items-center h-screen">
+            <div className="flex flex-col items-center gap-4">
+              <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+              <p className="text-muted-foreground">Đang tải thông tin...</p>
+            </div>
+          </div>
+        )
+      }
     return (
         <form className={cn("flex flex-col gap-6", className)} onSubmit={handleSubmit} {...props}>
             <div className="flex flex-col items-center gap-2 text-center">

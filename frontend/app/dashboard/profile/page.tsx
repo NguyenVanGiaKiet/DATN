@@ -1,7 +1,8 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
+
+import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -12,24 +13,24 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { toast } from "@/components/ui/use-toast"
+import toast from "react-hot-toast"
 import { Loader2 } from "lucide-react"
-import { useAuth } from "@/context/auth-context"
 
 const profileFormSchema = z.object({
-  name: z.string().min(2, {
+  username: z.string().min(2, {
     message: "Tên phải có ít nhất 2 ký tự",
   }),
   email: z.string().email({
     message: "Email không hợp lệ",
   }),
-  phone: z.string().min(10, {
+  phoneNumber: z.string().min(10, {
     message: "Số điện thoại không hợp lệ",
   }),
-  position: z.string().min(2, {
+  role: z.string().min(2, {
     message: "Vị trí công việc phải có ít nhất 2 ký tự",
   }),
   bio: z.string().optional(),
+  avatar: z.string().optional(),
 })
 
 const passwordFormSchema = z
@@ -53,17 +54,16 @@ export default function ProfilePage() {
   const [isLoading, setIsLoading] = useState(false)
   const [isPasswordLoading, setIsPasswordLoading] = useState(false)
   const [avatarSrc, setAvatarSrc] = useState("/placeholder-user.jpg")
-  const [profileData, setProfileData] = useState<any>(null) // Store fetched profile data
-  const [isDataLoading, setIsDataLoading] = useState(true) // Loading state for fetching profile data
 
   const profileForm = useForm<z.infer<typeof profileFormSchema>>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
-      name: "",
+      username: "",
       email: "",
-      phone: "",
-      position: "",
+      phoneNumber: "",
+      role: "",
       bio: "",
+      avatar: "",
     },
   })
 
@@ -75,130 +75,154 @@ export default function ProfilePage() {
       confirmPassword: "",
     },
   })
-  
-  useEffect(() => {
-    async function fetchProfile() {
-      const token = localStorage.getItem("token");
-      if (!token) return;
-      try {
-        const response = await fetch("http://localhost:5190/api/account/me", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }); // Thay bằng API thực tế
-        if (!response.ok) throw new Error("Lỗi khi gọi API")
-        const data = await response.json()
-        setProfileData(data)
-        profileForm.reset(data)
-      } catch (error) {
-        toast({
-          title: "Lỗi",
-          description: "Không thể tải dữ liệu hồ sơ",
-        })
-      } finally {
-        setIsDataLoading(false)
-      }
+
+  async function fetchProfile() {
+    const token = localStorage.getItem('token');
+    if (token) {
+      // Thực hiện yêu cầu với token nếu có
+      console.log("Token đã lấy thành công:", token);
+    } else {
+      // Nếu không có token trong localStorage
+      console.log("Không có token");
+    }
+    if (!token) throw new Error("Chưa đăng nhập")
+
+    const res = await fetch("http://localhost:5190/api/account/profile", {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    })
+
+    if (!res.ok) {
+      throw new Error("Không lấy được hồ sơ")
     }
 
+    return res.json()
+  }
+  useEffect(() => {
     fetchProfile()
+      .then((data) => {
+        profileForm.reset({
+          username: data.username || "",
+          email: data.email,
+          phoneNumber: data.phoneNumber || "",
+          role: data.role,
+          bio: data.bio || "",
+          avatar: data.avatar || null,
+        })
+
+        if (data.avatar) {
+          setAvatarSrc(data.avatar)
+        }
+      })
+      .catch((err) => {
+        toast.error("Lỗi" + err.message)
+      })
   }, [])
-
-
   async function onProfileSubmit(data: z.infer<typeof profileFormSchema>) {
     setIsLoading(true)
+    const token = localStorage.getItem("token")
 
-    try {
-      const res = await fetch("http://localhost:5190/api/account/profile", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      })
-
-      if (!res.ok) throw new Error("Cập nhật thất bại")
-
-      toast({
-        title: "Thành công",
-        description: "Thông tin cá nhân đã được cập nhật",
-      })
-    } catch (error) {
-      toast({
-        title: "Lỗi",
-        description: "Không thể cập nhật thông tin. Vui lòng thử lại.",
-      })
-    } finally {
-      setIsLoading(false)
+    const res = await fetch("http://localhost:5190/api/account/profile", {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    })
+    const result = await res.json()
+    if (res.ok) {
+      toast.success(result.message);
+      setTimeout(() => {
+        window.location.reload(); // reload lại trang
+      }, 1000);
+    } else {
+      toast.error("Cập nhật thất bại");
     }
-  }
 
+    setIsLoading(false)
+  }
 
   async function onPasswordSubmit(data: z.infer<typeof passwordFormSchema>) {
     setIsPasswordLoading(true)
+    const token = localStorage.getItem("token")
 
     try {
-      const res = await fetch("http://localhost:5190/api/account/password", {
+      const res = await fetch("http://localhost:5190/api/account/change-password", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          currentPassword: data.currentPassword,
+          newPassword: data.newPassword,
+        }),
       })
 
-      if (!res.ok) throw new Error("Đổi mật khẩu thất bại")
-
-      toast({
-        title: "Thành công",
-        description: "Mật khẩu đã được cập nhật",
-      })
-
-      passwordForm.reset({
-        currentPassword: "",
-        newPassword: "",
-        confirmPassword: "",
-      })
-    } catch (error) {
-      toast({
-        title: "Lỗi",
-        description: "Không thể đổi mật khẩu. Vui lòng thử lại.",
-      })
+      if (res.ok) {
+        toast.success("Mật khẩu đã được cập nhật");
+        passwordForm.reset()
+      } else {
+        const errorData = await res.json()
+        toast.error("Cập nhật thất bại: " + errorData.message);
+      }
+    } catch (err) {
+      toast.error("Không thể kết nối đến máy chủ");
     } finally {
       setIsPasswordLoading(false)
     }
   }
 
 
-  function handleAvatarChange(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0]
-    if (file) {
-      const formData = new FormData()
-      formData.append("avatar", file)
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-      // Gửi lên server
-      fetch("http://localhost:5190/api/account/upload-avatar", {
+    // 👉 Tạo URL tạm thời để hiển thị ảnh preview
+    const previewURL = URL.createObjectURL(file);
+    setAvatarSrc(previewURL); // Set ảnh preview
+
+    const formData = new FormData();
+    formData.append("image", file);
+
+    try {
+      const res = await fetch("http://localhost:5190/api/account/upload", {
         method: "POST",
         body: formData,
-      })
-        .then(async (res) => {
-          if (!res.ok) throw new Error("Upload thất bại")
-          const data = await res.json()
-          setAvatarSrc(data.avatarUrl) // Giả sử server trả về URL mới của avatar
+      });
 
-          toast({
-            title: "Thành công",
-            description: "Ảnh đại diện đã được cập nhật",
-          })
-        })
-        .catch(() => {
-          toast({
-            title: "Lỗi",
-            description: "Không thể tải lên ảnh đại diện",
-          })
-        })
+      if (!res.ok) {
+        throw new Error("Upload failed");
+      }
+
+      const data = await res.json();
+      const avatar = data.url;
+
+      // ✅ Cập nhật URL ảnh thật sau khi upload thành công
+      profileForm.setValue("avatar", avatar, { shouldDirty: true });
+      setAvatarSrc(avatar);
+
+      toast.success("Tải ảnh thành công!");
+    } catch (err) {
+      toast.error("Tải ảnh thất bại");
+      console.error(err);
     }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+          <p className="text-muted-foreground">Đang tải thông tin...</p>
+        </div>
+      </div>
+    )
   }
-
-
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-3xl font-bold tracking-tight">Hồ sơ cá nhân</h1>
@@ -218,7 +242,7 @@ export default function ProfilePage() {
               <Label htmlFor="avatar" className="cursor-pointer text-sm font-medium text-primary hover:underline">
                 Thay đổi ảnh
               </Label>
-              <Input id="avatar" type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+              <Input id="avatar" type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
               <p className="text-xs text-muted-foreground">Cho phép JPG, GIF hoặc PNG. Kích thước tối đa 1MB.</p>
             </div>
           </CardContent>
@@ -241,9 +265,9 @@ export default function ProfilePage() {
                   <div className="grid gap-6 md:grid-cols-2">
                     <div className="space-y-2">
                       <Label htmlFor="name">Họ và tên</Label>
-                      <Input id="name" {...profileForm.register("name")} />
-                      {profileForm.formState.errors.name && (
-                        <p className="text-sm text-red-500">{profileForm.formState.errors.name.message}</p>
+                      <Input id="username" {...profileForm.register("username")} />
+                      {profileForm.formState.errors.username && (
+                        <p className="text-sm text-red-500">{profileForm.formState.errors.username.message}</p>
                       )}
                     </div>
 
@@ -256,18 +280,18 @@ export default function ProfilePage() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="phone">Số điện thoại</Label>
-                      <Input id="phone" {...profileForm.register("phone")} />
-                      {profileForm.formState.errors.phone && (
-                        <p className="text-sm text-red-500">{profileForm.formState.errors.phone.message}</p>
+                      <Label htmlFor="phoneNumber">Số điện thoại</Label>
+                      <Input id="phoneNumber" {...profileForm.register("phoneNumber")} />
+                      {profileForm.formState.errors.phoneNumber && (
+                        <p className="text-sm text-red-500">{profileForm.formState.errors.phoneNumber.message}</p>
                       )}
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="position">Vị trí công việc</Label>
-                      <Input id="position" {...profileForm.register("position")} />
-                      {profileForm.formState.errors.position && (
-                        <p className="text-sm text-red-500">{profileForm.formState.errors.position.message}</p>
+                      <Label htmlFor="role">Vị trí công việc</Label>
+                      <Input id="role" {...profileForm.register("role")} />
+                      {profileForm.formState.errors.role && (
+                        <p className="text-sm text-red-500">{profileForm.formState.errors.role.message}</p>
                       )}
                     </div>
 
@@ -347,7 +371,6 @@ export default function ProfilePage() {
               </CardContent>
             </Card>
           </TabsContent>
-
         </Tabs>
       </div>
     </div>

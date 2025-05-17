@@ -12,10 +12,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { DatePicker } from "@/components/date-picker"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { ArrowLeft, Plus, Trash2, Loader2, Save, Mail, CheckCircle, XCircle, Package, FileText } from "lucide-react"
+import { ArrowLeft, Plus, Trash2, Save, Mail, CheckCircle, XCircle, Package, FileText } from "lucide-react"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import toast from "react-hot-toast"
 import { Badge } from "@/components/ui/badge"
+import { useNotification } from "@/components/notification-context";
+import { v4 as uuidv4 } from "uuid";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,6 +36,9 @@ import { vi } from "date-fns/locale"
 interface Supplier {
   supplierID: number
   supplierName: string
+  address: string
+  lat?: number
+  lng?: number
 }
 
 interface Product {
@@ -65,6 +70,7 @@ interface PurchaseOrder {
   supplier: {
     supplierID: number
     supplierName: string
+    address: string
   }
   orderDate: string
   expectedDeliveryDate: string
@@ -128,18 +134,15 @@ export default function EditPurchaseOrderPage({ params }: { params: { id: string
   const [showCancelDialog, setShowCancelDialog] = useState(false)
   const [isReceiving, setIsReceiving] = useState(false)
   const [isCreatingInvoice, setIsCreatingInvoice] = useState(false)
+  const [isReturnToSupplier, setIsReturnToSupplier] = useState(false)
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null)
-  const [selectedProducts, setSelectedProducts] = useState<Product[]>([])
   const [quantities, setQuantities] = useState<{ [key: number]: number }>({})
   const [unitPrices, setUnitPrices] = useState<{ [key: number]: number }>({})
   const [receivedQuantities, setReceivedQuantities] = useState<{ [key: number]: number }>({})
   const [returnQuantities, setReturnQuantities] = useState<{ [key: number]: number }>({})
-  const [showAddProductDialog, setShowAddProductDialog] = useState(false)
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [isEditing, setIsEditing] = useState(true) // Add this state to control editing mode
-  const [showReturnDialog, setShowReturnDialog] = useState(false)
-  const [showReceiveDialog, setShowReceiveDialog] = useState(false)
-
+  const [createdOrderId, setCreatedOrderId] = useState<string | null>(null)
+  const { addNotification } = useNotification();
   // Khởi tạo form
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -357,7 +360,16 @@ export default function EditPurchaseOrderPage({ params }: { params: { id: string
           })
         }
         throw new Error(errorData.message || "Không thể cập nhật đơn hàng")
-      }
+      }const result = await response.json()
+      setCreatedOrderId(result.purchaseOrderID)
+      // Gửi notification lên NotificationCenter
+            addNotification({
+              id: uuidv4(),
+              title: "Chỉnh sửa đơn hàng",
+              message: `Đơn hàng #${result.purchaseOrderID} đã được chỉnh sửa thành công với tổng giá trị ${totalAmount.toLocaleString('vi-VN')} VND.`,
+              date: new Date(),
+              read: false,
+            });
 
       // Hiển thị thông báo thành công
       toast.success(`Đơn hàng ${params.id} đã được cập nhật thành công với tổng giá trị ${totalAmount.toLocaleString('vi-VN')} VND.`)
@@ -595,6 +607,9 @@ Trân trọng,
   const handleCreateInvoice = async () => {
     router.push(`/dashboard/purchase-orders/invoices/${params.id}`)
   }
+  const handleReturnToSupplier = async () => {
+    router.push(`/dashboard/purchase-orders/return/${params.id}`)
+  }
 
   if (isLoading) {
     return (
@@ -631,13 +646,23 @@ Trân trọng,
               {isCreatingInvoice ? "Đang tạo..." : "Tạo hóa đơn"}
             </Button>
           )}
-
+          {/* Nút Tạo hóa đơn */}
+          {(purchaseOrder?.status === "Đang nhận hàng" || purchaseOrder?.status === "Đã nhận hàng") && (
+            <Button
+              variant={purchaseOrder?.status === "Đang nhận hàng" ? "outline" : "default"}
+              onClick={handleReturnToSupplier}
+              disabled={isReturnToSupplier}
+            >
+              <FileText className="mr-2 h-4 w-4" />
+              {isCreatingInvoice ? "Đang tạo..." : "Trả hàng"}
+            </Button>
+          )}
           {/* Nút Gửi email */}
-          {purchaseOrder?.status !== "Đã xác nhận" &&  purchaseOrder?.status !== "Đang nhận hàng" && purchaseOrder?.status !== "Đã nhận hàng" && (
+          {purchaseOrder?.status !== "Đã xác nhận" && purchaseOrder?.status !== "Đang nhận hàng" && purchaseOrder?.status !== "Đã nhận hàng" && (
             <Button
               variant={purchaseOrder?.status === "Đã gửi email" ? "outline" : "default"}
               onClick={handleSendEmailClick}
-              disabled={isSendingEmail || purchaseOrder?.status === "Đã hủy" } 
+              disabled={isSendingEmail || purchaseOrder?.status === "Đã hủy"}
             >
               <Mail className="mr-2 h-4 w-4" />
               {isSendingEmail ? "Đang gửi..." : purchaseOrder?.status === "Đã gửi email" ? "Gửi lại email" : "Gửi email"}
@@ -781,10 +806,12 @@ Trân trọng,
                     <TableHeader className="bg-muted/30">
                       <TableRow>
                         <TableHead className="font-medium">Sản phẩm</TableHead>
+                        <TableHead className="font-medium">Số lượng</TableHead>
                         <TableHead className="font-medium">Đơn vị</TableHead>
                         <TableHead className="font-medium">Đơn giá</TableHead>
-                        <TableHead className="font-medium">Số lượng đặt</TableHead>
-                        <TableHead className="font-medium">Số lượng đã nhận</TableHead>
+                        {['Đang nhận hàng', 'Đã nhận hàng'].includes(purchaseOrder?.status || '') && (
+                          <TableHead className="font-medium">Đã nhận</TableHead>
+                        )}
                         <TableHead className="font-medium">Thành tiền</TableHead>
                         <TableHead></TableHead>
                       </TableRow>
@@ -792,6 +819,7 @@ Trân trọng,
                     <TableBody>
                       {fields.map((field, index) => (
                         <TableRow key={field.id}>
+                          {/* Sản phẩm */}
                           <TableCell>
                             <FormField
                               control={form.control}
@@ -823,9 +851,33 @@ Trân trọng,
                               )}
                             />
                           </TableCell>
+                          {/* Số lượng đặt */}
                           <TableCell>
+                            <FormField
+                              control={form.control}
+                              name={`items.${index}.quantity`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormControl>
+                                    <Input
+                                      type="number"
+                                      min="1"
+                                      {...field}
+                                      disabled={!isEditing}
+                                      onChange={(e) => handleQuantityChange(e, index)}
+                                      className="h-9 w-24 focus:ring-1 focus:ring-primary"
+                                    />
+                                  </FormControl>
+                                  <FormMessage className="text-xs" />
+                                </FormItem>
+                              )}
+                            />
+                          </TableCell>
+                          {/* Đơn vị */}
+                          <TableCell className="h-9 w-24 focus:ring-1 focus:ring-primary">
                             {products.find((p) => p.productID.toString() === form.getValues(`items.${index}.productID`))?.unit || "-"}
                           </TableCell>
+                          {/* Đơn giá */}
                           <TableCell className="text-right">
                             <FormField
                               control={form.control}
@@ -848,33 +900,17 @@ Trân trọng,
                               )}
                             />
                           </TableCell>
-                          <TableCell>
-                            <FormField
-                              control={form.control}
-                              name={`items.${index}.quantity`}
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormControl>
-                                    <Input
-                                      type="number"
-                                      min="1"
-                                      {...field}
-                                      disabled={!isEditing}
-                                      onChange={(e) => handleQuantityChange(e, index)}
-                                      className="h-9 w-24 focus:ring-1 focus:ring-primary"
-                                    />
-                                  </FormControl>
-                                  <FormMessage className="text-xs" />
-                                </FormItem>
-                              )}
-                            />
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {purchaseOrder?.purchaseOrderDetails[index]?.receivedQuantity || 0}
-                          </TableCell>
+                          {/* Số lượng đã nhận */}
+                          {['Đang nhận hàng', 'Đã nhận hàng'].includes(purchaseOrder?.status || '') && (
+                            <TableCell className="h-9 w-[100px] focus:ring-1 focus:ring-primary">
+                              {purchaseOrder?.purchaseOrderDetails[index]?.receivedQuantity || 0}
+                            </TableCell>
+                          )}
+                          {/* Thành tiền */}
                           <TableCell className="font-medium">
                             {((form.getValues(`items.${index}.quantity`) || 0) * (form.getValues(`items.${index}.unitPrice`) || 0)).toLocaleString("vi-VN")} VND
                           </TableCell>
+                          {/* Thao tác */}
                           <TableCell>
                             <Button
                               type="button"

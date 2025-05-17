@@ -196,10 +196,6 @@ export default function ProductsPage() {
                 <SlidersHorizontal className="h-4 w-4" />
                 Xóa bộ lọc
               </Button>
-              <Button variant="outline" size="sm">
-                <Download className="mr-2 h-4 w-4" />
-                Xuất
-              </Button>
             </div>
           </div>
 

@@ -7,6 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import toast from "react-hot-toast"
+import { useNotification } from "@/components/notification-context";
+import { v4 as uuidv4 } from "uuid";
 
 export default function CreateCategoryPage() {
   const router = useRouter()
@@ -34,6 +36,15 @@ export default function CreateCategoryPage() {
         throw new Error("Không thể tạo danh mục")
       }
 
+      // Gửi notification lên NotificationCenter
+      const { addNotification } = useNotification();
+addNotification({
+        id: uuidv4(),
+        title: "Tạo danh mục",
+        message: `Danh mục mới đã được tạo thành công!`,
+        date: new Date(),
+        read: false,
+      });
       toast.success("Tạo danh mục thành công")
       router.push("/dashboard/categories")
     } catch (error) {

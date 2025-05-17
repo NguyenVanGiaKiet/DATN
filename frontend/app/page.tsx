@@ -11,7 +11,7 @@ export default function HomePage() {
           <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
             <GalleryVerticalEnd className="size-4" />
           </div>
-          <span>Acme Inc.</span>
+          <span>Purchasing Management</span>
         </Link>
         <div className="ml-auto flex items-center gap-4 sm:gap-6">
           <ThemeToggle />
@@ -25,15 +25,15 @@ export default function HomePage() {
           </nav>
         </div>
       </header>
-      <main className="flex flex-1 items-center justify-center">
-        <section className="w-full">
+      <main className="flex-1 flex items-center justify-center">
+        <section className="text-center">
           <div className="container flex flex-col items-center justify-center px-4 text-center space-y-4 py-12 md:py-24 lg:py-32">
             <div className="space-y-2">
               <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl/none">
-                Welcome to Acme Inc.
+                Welcome to Purchasing Management.
               </h1>
               <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl">
-                Your all-in-one platform for team collaboration and project management.
+                Smart Purchasing Management System For Businesses.
               </p>
             </div>
             <div className="space-x-4">

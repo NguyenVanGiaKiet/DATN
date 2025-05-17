@@ -4,6 +4,8 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Label } from "@/components/ui/label"
 import * as z from "zod"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -13,6 +15,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { ArrowLeft, Loader2, Save } from "lucide-react"
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import toast from "react-hot-toast"
+import { useNotification } from "@/components/notification-context";
+import { v4 as uuidv4 } from "uuid";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import {
   AlertDialog,
@@ -58,7 +62,7 @@ export default function CreateSupplierPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
-
+  const [avatarSrc, setAvatarSrc] = useState("/placeholder-user.jpg")
   // Khởi tạo form
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -97,7 +101,9 @@ export default function CreateSupplierPage() {
           status: data.status === "Đang hợp tác" ? "Đang hợp tác" : "Ngừng hợp tác"
         }),
       })
-
+      if (data.imageUrl) {
+        setAvatarSrc(data.imageUrl)
+      }
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || "Không thể tạo nhà cung cấp");
@@ -109,10 +115,19 @@ export default function CreateSupplierPage() {
 
       setHasChanges(false)
 
+      // Lấy hàm addNotification từ context
+      const { addNotification } = useNotification();
       // Đợi 1.5 giây để người dùng thấy thông báo trước khi chuyển trang
-      setTimeout(() => {
-        router.push("/dashboard/suppliers")
-      }, 1500)
+      // Gửi notification lên NotificationCenter
+      addNotification({
+        id: uuidv4(),
+        title: "Tạo nhà cung cấp",
+        message: `Nhà cung cấp mới đã được tạo thành công!`,
+        date: new Date(),
+        read: false,
+      });
+      toast.success("Tạo nhà cung cấp thành công!")
+      router.push("/dashboard/suppliers")
     } catch (error) {
       console.error("Lỗi khi tạo nhà cung cấp:", error)
       toast.error(error instanceof Error ? error.message : "Không thể tạo nhà cung cấp. Vui lòng thử lại sau.")
@@ -134,6 +149,9 @@ export default function CreateSupplierPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    const previewURL = URL.createObjectURL(file);
+    setAvatarSrc(previewURL); // Set ảnh preview
+
     const formData = new FormData();
     formData.append("image", file);
 
@@ -150,8 +168,9 @@ export default function CreateSupplierPage() {
       const data = await res.json();
       const imageUrl = data.url;
 
-      // ✅ Gán giá trị ảnh vào form
+      // ✅ Cập nhật URL ảnh thật sau khi upload thành công
       form.setValue("imageUrl", imageUrl, { shouldDirty: true });
+      setAvatarSrc(imageUrl); // Set ảnh thật vào preview
 
       toast.success("Tải ảnh thành công!");
     } catch (err) {
@@ -182,7 +201,20 @@ export default function CreateSupplierPage() {
                 <CardTitle className="text-xl text-primary">Thông tin cơ bản</CardTitle>
                 <CardDescription>Nhập thông tin cơ bản của nhà cung cấp</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-5 pt-5">
+              <CardContent className="flex flex-col items-center gap-4 pt-5">
+                <Avatar className="h-32 w-32">
+                  <AvatarImage src={avatarSrc || "/placeholder.svg"} alt="Avatar" />
+                  <AvatarFallback>AD</AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col items-center gap-2">
+                  <Label htmlFor="avatar" className="cursor-pointer text-sm font-medium text-primary hover:underline">
+                    Thay đổi ảnh
+                  </Label>
+                  <Input id="avatar" type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+                  <p className="text-xs text-muted-foreground">Cho phép JPG, GIF hoặc PNG. Kích thước tối đa 1MB.</p>
+                </div>
+              </CardContent>
+              <CardContent className="space-y-5">
                 <FormField
                   control={form.control}
                   name="supplierName"
@@ -393,21 +425,7 @@ export default function CreateSupplierPage() {
                   )}
                 />
               </CardContent>
-              
-              <div className="space-y-2">
-                <label className="block text-sm font-medium">Ảnh đại diện</label>
-                <Input type="file" accept="image/*" onChange={handleFileChange} />
-                {form.watch("imageUrl") && (
-                  <img
-                    src={form.watch("imageUrl")}
-                    alt="Ảnh đại diện"
-                    className="w-40 h-40 object-cover rounded-lg border mt-2"
-                  />
-                )}
-
-              </div>
-
-              <CardFooter className="flex justify-between bg-muted/20 rounded-b-lg">
+              <CardFooter className="flex justify-between">
                 <Button
                   variant="outline"
                   type="button"

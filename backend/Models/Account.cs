@@ -14,6 +14,7 @@ namespace MyWebAPI.Models
         public string? Role { get; set; }  // Ví dụ: "User", "Admin"
         public string? PhoneNumber { get; set; }  // Lưu số điện thoại của người dùng
         public string? Address { get; set; }  // Lưu địa chỉ của người dùng
+        public string? Bio { get; set; }
         public string? Avatar { get; set; }  // Lưu đường dẫn đến ảnh đại diện của người dùng
         public DateTime CreateDate { get; set; } = DateTime.UtcNow;  // Thời gian tạo tài khoản
         public DateTime UpdatedDate { get; set; } = DateTime.UtcNow;  // Thời gian cập nhật tài khoản

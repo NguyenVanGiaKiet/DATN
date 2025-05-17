@@ -36,6 +36,9 @@ namespace MyWebAPI.Migrations
                     b.Property<string>("Avatar")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("Bio")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTime>("CreateDate")
                         .HasColumnType("datetime2");
 
@@ -397,7 +400,7 @@ namespace MyWebAPI.Migrations
 
                     b.HasIndex("PurchaseOrderID");
 
-                    b.ToTable("ReturnsToSupplier");
+                    b.ToTable("ReturnToSupplier");
                 });
 
             modelBuilder.Entity("MyWebAPI.Models.Supplier", b =>

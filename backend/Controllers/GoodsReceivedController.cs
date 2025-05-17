@@ -188,12 +188,7 @@ namespace MyWebAPI.Controllers
 
                         detail.ReceivedQuantity += receivedQty;
 
-                        // Cập nhật số lượng tồn kho của sản phẩm
-                        var product = await _context.Products.FindAsync(detail.ProductID);
-                        if (product != null)
-                        {
-                            product.StockQuantity += receivedQty;
-                        }
+                        
                     }
                 }
 

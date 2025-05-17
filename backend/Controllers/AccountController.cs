@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Microsoft.Identity.Client;
 
 namespace MyWebAPI.Controllers
 {
@@ -17,13 +18,11 @@ namespace MyWebAPI.Controllers
     {
         private readonly AppDbContext _context;
         private readonly IConfiguration _configuration;
-        private readonly IAccountService _accountService;
 
-        public AccountController(AppDbContext context, IConfiguration configuration, IAccountService accountService)
+        public AccountController(AppDbContext context, IConfiguration configuration)
         {
             _context = context;
             _configuration = configuration;
-            _accountService = accountService;
         }
 
         // Đăng ký tài khoản
@@ -74,7 +73,8 @@ namespace MyWebAPI.Controllers
 
             if (account == null)
             {
-                return Unauthorized("Invalid email or password.");
+                return Unauthorized(new { message = "Sai email hoặc mật khẩu." });
+
             }
 
             // Kiểm tra mật khẩu
@@ -83,12 +83,14 @@ namespace MyWebAPI.Controllers
 
             if (result == PasswordVerificationResult.Failed)
             {
-                return Unauthorized("Invalid email or password.");
+                return Unauthorized(new { message = "Sai email hoặc mật khẩu." });
+
             }
 
             // Tạo JWT Token
             var claims = new[]
             {
+                new Claim(ClaimTypes.NameIdentifier, account.AccountID.ToString()),
                 new Claim(ClaimTypes.Name, account.Email),
                 new Claim(ClaimTypes.Role, account.Role)
             };
@@ -109,6 +111,7 @@ namespace MyWebAPI.Controllers
                 token = new JwtSecurityTokenHandler().WriteToken(token),
                 expiration = token.ValidTo
             });
+
         }
 
         // Xem thông tin tài khoản hiện tại (sau khi đã đăng nhập)
@@ -125,34 +128,127 @@ namespace MyWebAPI.Controllers
             {
                 account.Username,
                 account.Email,
-                account.Role
+                account.Role,
+                account.Avatar
             });
         }
+        [Authorize]
+        [HttpGet("profile")]
+        public IActionResult GetProfile()
+        {
+            var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdString))
+            {
+                return Unauthorized("Invalid user ID: Missing user ID in token.");
+            }
+
+            if (!int.TryParse(userIdString, out int userId))
+            {
+                return Unauthorized("Invalid user ID");
+            }
+
+            var user = _context.Accounts.FirstOrDefault(u => u.AccountID == userId);
+
+            if (user == null)
+                return NotFound();
+
+            return Ok(new
+            {
+                user.Username,
+                user.Email,
+                user.PhoneNumber,
+                user.Role,
+                user.Bio,
+                user.Avatar
+            });
+        }
+        [HttpPost("upload")]
+        public async Task<IActionResult> UploadImage(IFormFile image)
+        {
+            if (image == null || image.Length == 0)
+                return BadRequest("No file uploaded.");
+
+            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+            if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
+
+            var fileName = Guid.NewGuid().ToString() + Path.GetExtension(image.FileName);
+            var filePath = Path.Combine(uploadsFolder, fileName);
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await image.CopyToAsync(stream);
+            }
+
+            var fileUrl = $"{Request.Scheme}://{Request.Host}/uploads/{fileName}";
+            return Ok(new { url = fileUrl });
+        }
+
         [Authorize]
         [HttpPut("profile")]
         public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileDTO dto)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var result = await _accountService.UpdateProfileAsync(userId, dto);
+            try
+            {
+                var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userIdString))
+                {
+                    return Unauthorized("Invalid user ID: Missing user ID in token.");
+                }
 
-            if (!result.Success)
-                return BadRequest(result.Message);
+                if (!int.TryParse(userIdString, out int userId))
+                {
+                    return Unauthorized("Invalid user ID: Unable to parse user ID.");
+                }
 
-            return Ok(result.Data);
+                var user = await _context.Accounts.FindAsync(userId);
+                if (user == null)
+                {
+                    return NotFound("User not found.");
+                }
+
+                // Cập nhật thông tin người dùng
+                user.Username = dto.Username;
+                user.Email = dto.Email;
+                user.PhoneNumber = dto.PhoneNumber;
+                user.Role = dto.Role;
+                user.Bio = dto.Bio;
+                user.Avatar = dto.Avatar;
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new { message = "Cập nhật hồ sơ thành công !" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
         }
 
+
+
         [Authorize]
-        [HttpPut("password")]
+        [HttpPut("change-password")]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDTO dto)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var result = await _accountService.ChangePasswordAsync(userId, dto);
+            var user = await _context.Accounts.FindAsync(int.Parse(userId));
+            if (user == null) return NotFound();
 
-            if (!result.Success)
-                return BadRequest(result.Message);
+            var passwordHasher = new PasswordHasher<Account>();
+            var result = passwordHasher.VerifyHashedPassword(user, user.Password, dto.CurrentPassword);
 
-            return Ok("Password updated successfully");
+            if (result == PasswordVerificationResult.Failed)
+                return BadRequest(new { message = "Mật khẩu hiện tại không đúng." });
+
+            user.Password = passwordHasher.HashPassword(user, dto.NewPassword);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Mật khẩu đã được thay đổi thành công." });
         }
+
+
+
+
 
 
     }

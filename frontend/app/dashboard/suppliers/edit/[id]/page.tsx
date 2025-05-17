@@ -4,6 +4,8 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Label } from "@/components/ui/label"
 import * as z from "zod"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -13,6 +15,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { ArrowLeft, Loader2, Save } from "lucide-react"
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import toast from "react-hot-toast"
+import { useNotification } from "@/components/notification-context";
+import { v4 as uuidv4 } from "uuid";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import {
   AlertDialog,
@@ -59,7 +63,9 @@ export default function EditSupplierPage({ params }: { params: { id: string } })
   const [isLoading, setIsLoading] = useState(true)
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
-
+  const [avatarSrc, setAvatarSrc] = useState("/placeholder-user.jpg")
+  // Lấy hàm addNotification từ context
+  const { addNotification } = useNotification();
   // Khởi tạo form
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -103,6 +109,9 @@ export default function EditSupplierPage({ params }: { params: { id: string } })
           status: data.status,
           imageUrl: data.imageUrl || null, // Thêm trường imageUrl nếu cần thiết
         })
+        if (data.imageUrl) {
+          setAvatarSrc(data.imageUrl)
+        }
         console.log("Form đã được cập nhật với dữ liệu:", form.getValues())
       } catch (error) {
         console.error("Lỗi khi tải dữ liệu:", error)
@@ -181,6 +190,15 @@ export default function EditSupplierPage({ params }: { params: { id: string } })
 
       setHasChanges(false)
 
+      // Gửi notification lên NotificationCenter
+      addNotification({
+        id: uuidv4(),
+        title: "Cập nhật nhà cung cấp",
+        message: `Nhà cung cấp đã được cập nhật thành công!`,
+        date: new Date(),
+        read: false,
+      });
+
       // Đợi 1.5 giây để người dùng thấy thông báo trước khi chuyển trang
       setTimeout(() => {
         router.push("/dashboard/suppliers")
@@ -206,6 +224,9 @@ export default function EditSupplierPage({ params }: { params: { id: string } })
     const file = e.target.files?.[0];
     if (!file) return;
 
+    const previewURL = URL.createObjectURL(file);
+    setAvatarSrc(previewURL); // Set ảnh preview
+
     const formData = new FormData();
     formData.append("image", file);
 
@@ -222,8 +243,9 @@ export default function EditSupplierPage({ params }: { params: { id: string } })
       const data = await res.json();
       const imageUrl = data.url;
 
-      // ✅ Gán giá trị ảnh vào form
+      // ✅ Cập nhật URL ảnh thật sau khi upload thành công
       form.setValue("imageUrl", imageUrl, { shouldDirty: true });
+      setAvatarSrc(imageUrl); // Set ảnh thật vào preview
 
       toast.success("Tải ảnh thành công!");
     } catch (err) {
@@ -261,11 +283,25 @@ export default function EditSupplierPage({ params }: { params: { id: string } })
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <div className="grid gap-6 md:grid-cols-2">
             <Card className="shadow-md hover:shadow-lg transition-shadow duration-300">
-              <CardHeader>
+              <CardHeader className="bg-muted/50 rounded-t-lg">
                 <CardTitle className="text-xl text-primary">Thông tin chung</CardTitle>
                 <CardDescription>Thông tin cơ bản về nhà cung cấp</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-5 pt-5">
+              <CardContent className="flex flex-col items-center gap-4 pt-5">
+                <Avatar className="h-32 w-32">
+                  <AvatarImage src={avatarSrc || "/placeholder.svg"} alt="Avatar" />
+                  <AvatarFallback>AD</AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col items-center gap-2">
+                  <Label htmlFor="avatar" className="cursor-pointer text-sm font-medium text-primary hover:underline">
+                    Thay đổi ảnh
+                  </Label>
+                  <Input id="avatar" type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+                  <p className="text-xs text-muted-foreground">Cho phép JPG, GIF hoặc PNG. Kích thước tối đa 1MB.</p>
+                </div>
+              </CardContent>
+
+              <CardContent className="space-y-5">
                 <FormField
                   control={form.control}
                   name="supplierName"
@@ -476,20 +512,7 @@ export default function EditSupplierPage({ params }: { params: { id: string } })
                   )}
                 />
               </CardContent>
-
-              <div className="space-y-2">
-                <label className="block text-sm font-medium">Ảnh đại diện</label>
-                <Input type="file" accept="image/*" onChange={handleFileChange} />
-                {form.watch("imageUrl") && (
-                  <img
-                    src={form.watch("imageUrl") || ""}
-                    alt="Ảnh đại diện"
-                    className="w-40 h-40 object-cover rounded-lg border mt-2"
-                  />
-                )}
-              </div>
-
-              <CardFooter className="flex justify-between bg-muted/20 rounded-b-lg">
+              <CardFooter className="flex justify-between">
                 <Button
                   variant="outline"
                   type="button"

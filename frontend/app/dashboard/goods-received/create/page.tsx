@@ -14,6 +14,8 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import toast from "react-hot-toast"
+import { useNotification } from "@/components/notification-context";
+import { v4 as uuidv4 } from "uuid";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 
 interface PurchaseOrder {
@@ -129,7 +131,15 @@ export default function CreateGoodsReceivedPage() {
         throw new Error("Không thể tạo phiếu nhập hàng")
       }
 
-      toast.success("Phiếu nhập hàng đã được tạo thành công")
+      const { addNotification } = useNotification();
+addNotification({
+        id: uuidv4(),
+        title: "Tạo phiếu nhập",
+        message: `Phiếu nhập mới đã được tạo thành công!`,
+        date: new Date(),
+        read: false,
+      });
+      toast.success("Tạo phiếu nhập thành công!")
       router.push("/dashboard/goods-received")
     } catch (error) {
       console.error("Lỗi khi tạo phiếu nhập hàng:", error)

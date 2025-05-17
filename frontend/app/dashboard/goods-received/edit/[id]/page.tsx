@@ -14,6 +14,8 @@ import { Calendar as CalendarComponent } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar, ChevronLeft, Package, Building2, DollarSign, Box, Trash2 } from "lucide-react"
 import toast from "react-hot-toast"
+import { useNotification } from "@/components/notification-context";
+import { v4 as uuidv4 } from "uuid";
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -130,7 +132,15 @@ export default function EditGoodsReceivedPage({ params }: { params: { id: string
         throw new Error("Không thể cập nhật phiếu nhận hàng")
       }
 
-      toast.success("Cập nhật phiếu nhận hàng thành công")
+      const { addNotification } = useNotification();
+addNotification({
+        id: uuidv4(),
+        title: "Cập nhật phiếu nhập",
+        message: `Phiếu nhập đã được cập nhật thành công!`,
+        date: new Date(),
+        read: false,
+      });
+      toast.success("Cập nhật phiếu nhập thành công!")
       router.push("/dashboard/goods-received")
     } catch (error) {
       console.error("Lỗi khi cập nhật:", error)

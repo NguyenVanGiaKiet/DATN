@@ -16,7 +16,7 @@ namespace MyWebAPI.Data
         public DbSet<PurchaseOrder> PurchaseOrders { get; set; }
         public DbSet<PurchaseOrderDetail> PurchaseOrderDetails { get; set; }
         public DbSet<GoodsReceived> GoodsReceived { get; set; }
-        public DbSet<ReturnToSupplier> ReturnsToSupplier { get; set; }
+        public DbSet<ReturnToSupplier> ReturnToSupplier { get; set; }
         public DbSet<Invoice> Invoices { get; set; }
         public DbSet<Payment> Payments { get; set; }
         public DbSet<ApprovalLog> ApprovalLogs { get; set; }

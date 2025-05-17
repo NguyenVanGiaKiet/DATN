@@ -14,6 +14,8 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import toast from "react-hot-toast"
+import { useNotification } from "@/components/notification-context";
+import { v4 as uuidv4 } from "uuid";
 
 interface Category {
   categoryID: number
@@ -81,7 +83,15 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
         throw new Error("Không thể cập nhật danh mục")
       }
 
-      toast.success("Danh mục đã được cập nhật thành công")
+      const { addNotification } = useNotification();
+addNotification({
+        id: uuidv4(),
+        title: "Cập nhật danh mục",
+        message: `Danh mục đã được cập nhật thành công!`,
+        date: new Date(),
+        read: false,
+      });
+      toast.success("Cập nhật danh mục thành công!")
       router.push("/dashboard/categories")
     } catch (error) {
       console.error("Lỗi khi cập nhật danh mục:", error)

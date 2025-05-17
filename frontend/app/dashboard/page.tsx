@@ -3,6 +3,7 @@ import { DashboardCharts } from "@/components/dashboard-charts"
 import { RecentOrders } from "@/components/recent-orders"
 import { SupplierStats } from "@/components/supplier-stats"
 import { OrderStats } from "../../components/order-stats"
+import { AuthGuard } from "@/components/auth-guard"
 
 export default function DashboardPage() {
   return (
