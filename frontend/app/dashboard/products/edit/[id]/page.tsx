@@ -71,6 +71,7 @@ type ProductFormValues = z.infer<typeof productSchema>
 
 export default function EditProductPage({ params }: { params: { id: string } }) {
   const router = useRouter()
+  const { addNotification } = useNotification();
   const [categories, setCategories] = useState<Category[]>([])
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [loading, setLoading] = useState(false)
@@ -208,7 +209,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
       }
 
       // Gửi notification lên NotificationCenter
-      const { addNotification } = useNotification();
+      
       addNotification({
         id: uuidv4(),
         title: "Cập nhật sản phẩm",

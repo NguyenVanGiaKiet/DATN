@@ -48,7 +48,7 @@ export default function SuppliersPage() {
   const [statusFilter, setStatusFilter] = useState("all")
   const [ratingFilter, setRatingFilter] = useState("all")
   const [deliveryTimeFilter, setDeliveryTimeFilter] = useState("all")
-  const itemsPerPage = 10 // 2 hàng x 5 card
+  const itemsPerPage = 5 // 1 hàng x 5 card
 
   // Hàm xóa tất cả bộ lọc
   const clearAllFilters = () => {
@@ -204,22 +204,31 @@ export default function SuppliersPage() {
                 onClick={() => router.push(`/dashboard/suppliers/edit/${supplier.supplierID}`)}
               >
                 <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    <span className="text-sm">{supplier.supplierName}</span>
-                    <Badge variant="outline" className={getStatusClass(supplier.status)}>
+                  <CardTitle className="flex items-center justify-between gap-2 min-w-0">
+                    <span className="text-sm truncate max-w-[180px]">{supplier.supplierName}</span>
+                    <Badge
+                      variant="outline"
+                      className={`w-[100px] flex items-center justify-center ${getStatusClass(supplier.status)}`}
+                    >
                       {supplier.status}
                     </Badge>
                   </CardTitle>
+                  {/* Star rating under supplier name */}
+                  <div className="flex items-center gap-1 mt-1">
+                    {[1, 2, 3, 4, 5].map(i => (
+                      <Star key={i} className={`h-4 w-4 ${i <= supplier.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} fill={i <= supplier.rating ? 'currentColor' : 'none'} />
+                    ))}
+                  </div>
                   <CardDescription className="text-xs">{supplier.contactPerson}</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
                     {supplier.imageUrl && (
-                      <div className="w-full h-32 rounded-md overflow-hidden border border-gray-200">
+                      <div className="w-full flex justify-center">
                         <img
                           src={supplier.imageUrl}
                           alt={`Ảnh ${supplier.supplierName}`}
-                          className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                          className="w-24 h-24 rounded-full object-cover border border-gray-200 shadow-sm hover:scale-105 transition-transform duration-300"
                         />
                       </div>
                     )}
@@ -233,9 +242,9 @@ export default function SuppliersPage() {
                         <Mail className="h-3 w-3 text-muted-foreground" />
                         <span>{supplier.email}</span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <MapPin className="h-3 w-3 text-muted-foreground" />
-                        <span>{supplier.address}</span>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <MapPin className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                        <span className="truncate text-sm" title={supplier.address}>{supplier.address}</span>
                       </div>
                     </div>
                   </div>

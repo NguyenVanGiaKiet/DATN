@@ -136,14 +136,34 @@ namespace MyWebAPI.Controllers
                 invoice.PaymentStatus = newTotalPaid >= invoice.TotalAmount ? "Đã thanh toán" : "Thanh toán một phần";
 
                 // Cập nhật trạng thái đơn hàng khi hóa đơn được thanh toán đầy đủ
+                bool wasFullyPaid = invoice.PurchaseOrder.Status == "Đã thanh toán";
                 if (newTotalPaid >= invoice.TotalAmount)
                 {
                     invoice.PurchaseOrder.Status = "Đã thanh toán";
-                }else
+                    // Chỉ cộng vào kho nếu trước đó chưa "Đã thanh toán"
+                    if (!wasFullyPaid)
+                    {
+                        // Lấy chi tiết đơn hàng
+                        var poDetails = await _context.PurchaseOrderDetails
+                            .Where(d => d.PurchaseOrderID == invoice.PurchaseOrder.PurchaseOrderID)
+                            .ToListAsync();
+                        foreach (var detail in poDetails)
+                        {
+                            var product = await _context.Products.FirstOrDefaultAsync(p => p.ProductID == detail.ProductID);
+                            if (product != null)
+                            {
+                                // Cộng số lượng đã nhận vào tồn kho
+                                product.StockQuantity += (int)detail.ReceivedQuantity;
+                            }
+                        }
+                        await _context.SaveChangesAsync();
+                    }
+                }
+                else
                 {
                     invoice.PurchaseOrder.Status = "Thanh toán một phần";
                 }
-            
+
                 var payment = new Payment
                 {
                     InvoiceID = paymentDto.InvoiceID,
@@ -225,9 +245,26 @@ namespace MyWebAPI.Controllers
                 payment.Invoice.PaymentStatus = newTotalPaid >= payment.Invoice.TotalAmount ? "Đã thanh toán" : "Thanh toán một phần";
 
                 // Cập nhật trạng thái đơn hàng
+                bool wasFullyPaid = payment.Invoice.PurchaseOrder.Status == "Đã thanh toán";
                 if (newTotalPaid >= payment.Invoice.TotalAmount)
                 {
                     payment.Invoice.PurchaseOrder.Status = "Đã thanh toán";
+                    // Chỉ cộng vào kho nếu trước đó chưa "Đã thanh toán"
+                    if (!wasFullyPaid)
+                    {
+                        var poDetails = await _context.PurchaseOrderDetails
+                            .Where(d => d.PurchaseOrderID == payment.Invoice.PurchaseOrder.PurchaseOrderID)
+                            .ToListAsync();
+                        foreach (var detail in poDetails)
+                        {
+                            var product = await _context.Products.FirstOrDefaultAsync(p => p.ProductID == detail.ProductID);
+                            if (product != null)
+                            {
+                                product.StockQuantity += (int)detail.ReceivedQuantity;
+                            }
+                        }
+                        await _context.SaveChangesAsync();
+                    }
                 }
 
                 await _context.SaveChangesAsync();

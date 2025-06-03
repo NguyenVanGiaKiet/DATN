@@ -10,8 +10,8 @@ import { Toaster } from "react-hot-toast"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Purchasing Management. - Login & Registration",
-  description: "Login and registration pages for Purchasing Management.",
+  title: "Purchasing Management.",
+  description: "Smart Purchasing Management System For Businesses.",
 }
 
 export default function RootLayout({

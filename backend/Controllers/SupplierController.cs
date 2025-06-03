@@ -59,7 +59,7 @@ namespace MyWebAPI.Controllers
 
         // POST: api/Supplier
         [HttpPost]
-        public async Task<IActionResult> CreateSupplier([FromBody] SupplierUpdateDTO supplierDTO)
+        public async Task<IActionResult> CreateSupplier([FromBody] SupplierCreateDTO supplierDTO)
         {
             try
             {

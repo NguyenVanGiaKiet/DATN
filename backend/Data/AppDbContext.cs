@@ -20,6 +20,8 @@ namespace MyWebAPI.Data
         public DbSet<Invoice> Invoices { get; set; }
         public DbSet<Payment> Payments { get; set; }
         public DbSet<ApprovalLog> ApprovalLogs { get; set; }
+        public DbSet<PurchaseRequest> PurchaseRequests { get; set; }
+        public DbSet<PurchaseRequestItem> PurchaseRequestItems { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -89,6 +91,19 @@ namespace MyWebAPI.Data
                 .HasOne(r => r.PurchaseOrder)
                 .WithMany(p => p.ReturnsToSupplier)
                 .HasForeignKey(r => r.PurchaseOrderID)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            // Cấu hình quan hệ cho PurchaseRequest
+            modelBuilder.Entity<PurchaseRequest>()
+                .HasMany(pr => pr.Items)
+                .WithOne(i => i.PurchaseRequest!)
+                .HasForeignKey(i => i.PurchaseRequestID)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<PurchaseRequestItem>()
+                .HasOne(i => i.Product)
+                .WithMany()
+                .HasForeignKey(i => i.ProductID)
                 .OnDelete(DeleteBehavior.NoAction);
         }
     }

@@ -20,6 +20,7 @@ import { Textarea } from "@/components/ui/textarea"
 
 interface PurchaseOrder {
   purchaseOrderID: string
+  purchaseRequestID: number
   supplierID: number
   supplier: {
     supplierName: string
@@ -115,6 +116,8 @@ export default function PurchaseOrdersPage() {
         return "bg-yellow-100 text-yellow-800 border-yellow-300 hover:bg-yellow-200 transition-colors"
       case "Đã xuất hóa đơn":
         return "bg-yellow-100 text-yellow-800 border-yellow-300 hover:bg-yellow-200 transition-colors"
+      case "Thanh toán một phần":
+        return "bg-yellow-100 text-yellow-800 border-yellow-300 hover:bg-yellow-200 transition-colors"
       case "Đã thanh toán":
         return "bg-green-100 text-green-800 border-green-300 hover:bg-green-200 transition-colors"
       default:
@@ -153,12 +156,6 @@ export default function PurchaseOrdersPage() {
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Đơn Đặt Hàng</h1>
-        <Link href="/dashboard/purchase-orders/create">
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            Tạo Đơn Mới
-          </Button>
-        </Link>
       </div>
 
       <Card>
@@ -252,6 +249,7 @@ export default function PurchaseOrdersPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Mã đơn hàng</TableHead>
+                  <TableHead>Mã đơn yêu cầu</TableHead>
                   <TableHead>Nhà cung cấp</TableHead>
                   <TableHead>Ngày đặt</TableHead>
                   <TableHead>Ngày giao dự kiến</TableHead>
@@ -291,6 +289,7 @@ export default function PurchaseOrdersPage() {
                       }}
                     >
                       <TableCell className="font-medium">{order.purchaseOrderID}</TableCell>
+                      <TableCell className="font-medium">PR-{order.purchaseRequestID.toString().padStart(4, '0')}</TableCell>
                       <TableCell>{order.supplier.supplierName}</TableCell>
                       <TableCell>
                         {order.orderDate && format(new Date(order.orderDate), "dd/MM/yyyy", { locale: vi })}

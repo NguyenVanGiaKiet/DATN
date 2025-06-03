@@ -10,18 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { format } from "date-fns"
 import { vi } from "date-fns/locale"
 import toast from "react-hot-toast"
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination"
-import { Calendar as CalendarComponent } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { cn } from "@/lib/utils"
-import { CalendarIcon } from "lucide-react"
+import { CalendarIcon, ChevronLeft, ChevronRight, Search } from "lucide-react"
 
 interface GoodsReceived {
   goodsReceivedID: number
@@ -73,11 +62,11 @@ export default function GoodsReceivedPage() {
   const getStatusClass = (status: string) => {
     switch (status) {
       case "Completed":
-        return "bg-green-100 text-green-800 border-green-300"
+        return "bg-green-100 text-green-800 border-green-300 hover:bg-green-200 transition-colors"
       case "Partial":
-        return "bg-yellow-100 text-yellow-800 border-yellow-300"
+        return "bg-yellow-100 text-yellow-800 border-yellow-300 hover:bg-yellow-200 transition-colors"
       case "Pending":
-        return "bg-gray-100 text-gray-800 border-gray-300"
+        return "bg-gray-100 text-gray-800 border-gray-300 hover:bg-gray-200 transition-colors"
       default:
         return "bg-gray-100 text-gray-800 border-gray-300"
     }
@@ -137,61 +126,26 @@ export default function GoodsReceivedPage() {
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Phiếu nhận hàng</h1>
-        <Button onClick={() => router.push("/dashboard/goods-received/create")}>
-          Tạo phiếu nhận hàng
-        </Button>
       </div>
 
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Danh sách phiếu nhận hàng</CardTitle>
+              <CardTitle className="text-xl text-primary">Danh sách phiếu nhận hàng</CardTitle>
               <CardDescription>
                 Quản lý thông tin các phiếu nhận hàng
               </CardDescription>
             </div>
-            <div className="flex items-center gap-4">
+            
+            <div className="flex items-center gap-2 w-full max-w-sm relative">
+              <Search className="h-4 w-4 text-muted-foreground absolute ml-2" />
               <Input
                 placeholder="Tìm kiếm theo mã đơn hàng hoặc nhà cung cấp"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="max-w-sm"
+                className="pl-8"
               />
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant={"outline"}
-                    className={cn(
-                      "w-[240px] justify-start text-left font-normal",
-                      !date && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {date ? format(date, "dd/MM/yyyy") : <span>Chọn ngày</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <CalendarComponent
-                    mode="single"
-                    selected={date}
-                    onSelect={setDate}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-              <select
-                className="h-10 w-[200px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-                value={selectedSupplier}
-                onChange={(e) => setSelectedSupplier(e.target.value)}
-              >
-                <option value="">Tất cả nhà cung cấp</option>
-                {uniqueSuppliers.map((supplier) => (
-                  <option key={supplier.id} value={supplier.id}>
-                    {supplier.name}
-                  </option>
-                ))}
-              </select>
             </div>
           </div>
         </CardHeader>
@@ -214,7 +168,6 @@ export default function GoodsReceivedPage() {
                   <TableRow 
                     key={gr.goodsReceivedID}
                     className="cursor-pointer hover:bg-muted/50"
-                    onClick={() => router.push(`/dashboard/goods-received/edit/${gr.goodsReceivedID}`)}
                   >
                     <TableCell className="font-medium">GR-{gr.goodsReceivedID.toString().padStart(4, '0')}</TableCell>
                     <TableCell>{gr.purchaseOrderID}</TableCell>
@@ -233,52 +186,29 @@ export default function GoodsReceivedPage() {
             </Table>
           </div>
 
-          <div className="flex items-center justify-between space-x-2 py-4">
-            <div className="flex-1 text-sm text-muted-foreground">
-              Hiển thị {startIndex + 1}-{Math.min(endIndex, filteredGoodsReceived.length)} trong tổng số {filteredGoodsReceived.length} phiếu
+          <div className="flex items-center justify-between mt-4">
+            <div className="text-sm text-muted-foreground">
+              Hiển thị {(currentPage-1)*itemsPerPage+1} đến {Math.min(currentPage*itemsPerPage, filteredGoodsReceived.length)} trong tổng số {filteredGoodsReceived.length} đơn trả hàng
             </div>
             <div className="flex items-center space-x-2">
-              <Pagination>
-                <PaginationContent>
-                  <PaginationItem>
-                    <PaginationPrevious 
-                      href="#"
-                      onClick={(e) => {
-                        e.preventDefault()
-                        setCurrentPage(prev => Math.max(prev - 1, 1))
-                      }}
-                      aria-disabled={currentPage === 1}
-                      className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
-                    />
-                  </PaginationItem>
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                    <PaginationItem key={page}>
-                      <PaginationLink
-                        href="#"
-                        onClick={(e) => {
-                          e.preventDefault()
-                          setCurrentPage(page)
-                        }}
-                        isActive={currentPage === page}
-                        className={currentPage === page ? "bg-primary text-primary-foreground" : ""}
-                      >
-                        {page}
-                      </PaginationLink>
-                    </PaginationItem>
-                  ))}
-                  <PaginationItem>
-                    <PaginationNext 
-                      href="#"
-                      onClick={(e) => {
-                        e.preventDefault()
-                        setCurrentPage(prev => Math.min(prev + 1, totalPages))
-                      }}
-                      aria-disabled={currentPage === totalPages}
-                      className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
-                    />
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Trước
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+              >
+                Sau
+                <ChevronRight className="h-4 w-4" />
+              </Button>
             </div>
           </div>
         </CardContent>

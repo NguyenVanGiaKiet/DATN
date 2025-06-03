@@ -15,6 +15,7 @@ import { ArrowLeft, Loader2 } from "lucide-react"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import toast from "react-hot-toast"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Badge } from "@/components/ui/badge"
 
 // Schema cho form chính
 const formSchema = z.object({
@@ -55,6 +56,7 @@ interface PurchaseOrderDetail {
 
 interface PurchaseOrder {
   purchaseOrderID: string
+  purchaseRequestID: number
   supplier: {
     supplierName: string
   }
@@ -254,7 +256,31 @@ const onSubmit = async (data: FormValues) => {
     setIsSubmitting(false)
   }
 }
-
+// Lấy class cho trạng thái
+const getStatusClass = (status: string) => {
+  switch (status) {
+    case "Đang xử lý":
+      return "bg-yellow-100 text-yellow-800 border-yellow-300 hover:bg-yellow-200 transition-colors"
+    case "Đã gửi email":
+      return "bg-blue-100 text-blue-800 border-blue-300 hover:bg-blue-200 transition-colors"
+    case "Đã xác nhận":
+      return "bg-green-100 text-green-800 border-green-300 hover:bg-green-200 transition-colors"
+    case "Đã hủy":
+      return "bg-red-100 text-red-800 border-red-300 hover:bg-red-200 transition-colors"
+    case "Đang giao hàng":
+      return "bg-purple-100 text-purple-800 border-purple-300 hover:bg-purple-200 transition-colors"
+    case "Đã nhận hàng":
+      return "bg-emerald-100 text-emerald-800 border-emerald-300 hover:bg-emerald-200 transition-colors"
+    case "Đã trả hàng":
+      return "bg-orange-100 text-orange-800 border-orange-300 hover:bg-orange-200 transition-colors"
+    case "Đang nhận hàng":
+      return "bg-yellow-100 text-yellow-800 border-yellow-300 hover:bg-yellow-200 transition-colors"
+    case "Đã thanh toán":
+      return "bg-green-100 text-green-800 border-green-300 hover:bg-green-200 transition-colors"
+    default:
+      return "bg-gray-100 text-gray-800 border-gray-300 hover:bg-gray-200 transition-colors"
+  }
+}
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -273,6 +299,11 @@ const onSubmit = async (data: FormValues) => {
             <ArrowLeft className="h-4 w-4" />
           </Button>
         <h1 className="text-3xl font-bold tracking-tight">Tạo phiếu trả hàng</h1>
+        <span className="text-base text-muted-foreground font-normal">#{params.id}</span>
+        <span className="text-base text-muted-foreground font-normal">#{purchaseOrder?.purchaseRequestID && `/ #PR-${purchaseOrder.purchaseRequestID.toString().padStart(4, '0')}`}</span>
+        {purchaseOrder && (
+          <Badge className={getStatusClass(purchaseOrder.status)}>{purchaseOrder.status}</Badge>
+        )}
       </div>
 
       <Alert>
@@ -288,7 +319,7 @@ const onSubmit = async (data: FormValues) => {
           <div className="grid gap-6 md:grid-cols-2">
             <Card>
               <CardHeader>
-                <CardTitle>Thông tin phiếu trả hàng</CardTitle>
+                <CardTitle className="text-xl text-primary">Thông tin phiếu trả hàng</CardTitle>
                 <CardDescription>Nhập thông tin cơ bản cho phiếu trả hàng này</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -376,7 +407,7 @@ const onSubmit = async (data: FormValues) => {
 
             <Card>
               <CardHeader>
-                <CardTitle>Thông tin đơn hàng</CardTitle>
+                <CardTitle className="text-xl text-primary">Thông tin đơn hàng</CardTitle>
                 <CardDescription>Chi tiết đơn hàng và sản phẩm có thể trả</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">

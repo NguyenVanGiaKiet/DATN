@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import { useForm, useFieldArray } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -17,6 +17,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import toast from "react-hot-toast"
 import { useNotification } from "@/components/notification-context";
 import { v4 as uuidv4 } from "uuid";
+import { useSearchParams } from "next/navigation";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,6 +33,10 @@ import {
 interface Supplier {
   supplierID: number
   supplierName: string
+}
+
+interface PurchaseRequest {
+  purchaseRequestID: number
 }
 
 interface Product {
@@ -60,13 +65,16 @@ const orderItemSchema = z.object({
   unit: z.string({
     required_error: "Vui lòng nhập đơn vị",
   }),
-
+  description: z.string().optional(),
 })
 
 const formSchema = z.object({
   supplierID: z.string({
     required_error: "Vui lòng chọn nhà cung cấp",
   }),
+  approvedBy: z.string({
+    required_error: "Vui lòng nhập người phê duyệt",
+  }).min(2, "Vui lòng nhập tên người phê duyệt"),
   orderDate: z.date({
     required_error: "Vui lòng chọn ngày đặt hàng",
   }),
@@ -79,8 +87,24 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>
 
+// Định nghĩa defaultValues chuẩn
+const defaultValues = {
+  supplierID: "",
+  approvedBy: "",
+  orderDate: new Date(),
+  expectedDeliveryDate: new Date(),
+  notes: "",
+  items: [{ id: uuidv4(), productID: "", quantity: 1, unit: "", unitPrice: 0, totalPrice: 0, description: "" }],
+};
+
 export default function CreatePurchaseOrderPage() {
+  const searchParams = useSearchParams();
+  const purchaseRequestID = searchParams.get("fromPR");
+  const productsFromRequest = searchParams.get("products");
+  const params = useParams();
   const router = useRouter()
+  const { addNotification } = useNotification();
+  const [isSendingEmail, setIsSendingEmail] = useState(false)
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -89,28 +113,166 @@ export default function CreatePurchaseOrderPage() {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
   const [createdOrderId, setCreatedOrderId] = useState<string | null>(null)
-  const [isSendingEmail, setIsSendingEmail] = useState(false)
+  const [tempOrderId] = useState<string>(() => `TMP-${Date.now()}-${Math.floor(Math.random() * 1000)}`)
+  const [predictedOrderId, setPredictedOrderId] = useState<string | null>(null);
 
-  // Lấy hàm addNotification từ context
-  const { addNotification } = useNotification();
+  // Import useForm, useFieldArray ở trên rồi
+  // Định nghĩa defaultValues chuẩn
+  const getDefaultItems = () => {
+    if (productsFromRequest) {
+      try {
+        const items = JSON.parse(decodeURIComponent(productsFromRequest));
+        // Map sang đúng định dạng của đơn hàng (thêm unitPrice, totalPrice, id)
+        return items.map((item: any) => ({
+          id: uuidv4(),
+          productID: item.productID?.toString() || "",
+          quantity: item.quantity || 1,
+          unit: item.unit || "",
+          unitPrice: 0,
+          totalPrice: 0,
+          description: item.description || "",
+        }));
+      } catch {
+        return [{ id: uuidv4(), productID: "", quantity: 1, unit: "", unitPrice: 0, totalPrice: 0, description: "" }];
+      }
+    }
+    return [{ id: uuidv4(), productID: "", quantity: 1, unit: "", unitPrice: 0, totalPrice: 0, description: "" }];
+  };
+
+  const defaultValues = {
+    supplierID: "",
+    approvedBy: "",
+    orderDate: new Date(),
+    expectedDeliveryDate: new Date(),
+    notes: "",
+    items: getDefaultItems(),
+  };
+
+  
+
+  useEffect(() => {
+    fetch('http://localhost:5190/api/purchaseorder/next-id')
+      .then(res => res.json())
+      .then(data => setPredictedOrderId(data.nextId))
+      .catch(() => setPredictedOrderId(null));
+  }, []);
 
   // Khởi tạo form
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      orderDate: new Date(),
-      expectedDeliveryDate: new Date(),
-      notes: "",
-      items: [{ productID: "", quantity: 1, unitPrice: 0, totalPrice: 0 }],
-    },
+    defaultValues,
   })
 
-  // Sử dụng useFieldArray để quản lý mảng các sản phẩm
+  // Khai báo useFieldArray TRƯỚC khi dùng trong useEffect
   const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: "items",
-  })
+    keyName: "id",
+  });
 
+  // Nếu có productsFromRequest (tức là vừa chuyển từ Purchase Request sang)
+  useEffect(() => {
+    if (productsFromRequest) {
+      try {
+        const items = JSON.parse(decodeURIComponent(productsFromRequest));
+        if (Array.isArray(items) && items.length > 0) {
+          const mapped = items.map(item => ({
+            id: item.id || uuidv4(),
+            productID: item.productID?.toString() || "",
+            quantity: Number(item.quantity) || 1,
+            unit: item.unit || "",
+            unitPrice: 0,
+            totalPrice: 0,
+            description: item.description || ""
+          }));
+          form.reset({
+            ...defaultValues,
+            ...form.getValues(),
+            items: mapped
+          });
+          setTimeout(() => {
+            remove();
+            mapped.forEach((item) => append(item));
+          }, 0);
+          return;
+        }
+      } catch {}
+    } else {
+      // Không có productsFromRequest, mới xét localStorage
+      const draftStr = localStorage.getItem('purchaseOrderItemsDraft');
+      if (draftStr) {
+        try {
+          const items = JSON.parse(draftStr);
+          if (Array.isArray(items) && items.length > 0) {
+            const mappedWithId = items.map(item => ({
+              id: item.id || uuidv4(),
+              productID: item.productID?.toString() || "",
+              quantity: Number(item.quantity) || 1,
+              unit: item.unit || "",
+              unitPrice: item.unitPrice || 0,
+              totalPrice: item.totalPrice || 0,
+              description: item.description || ""
+            }));
+            form.reset({
+              ...defaultValues,
+              ...form.getValues(),
+              items: mappedWithId
+            });
+            setTimeout(() => {
+              remove();
+              mappedWithId.forEach((item) => append(item));
+            }, 0);
+            return;
+          }
+        } catch {}
+      }
+      // Nếu không có draft, xét tiếp order_products như cũ...
+      const itemsStr = localStorage.getItem('order_products');
+      if (itemsStr) {
+        try {
+          const items = JSON.parse(itemsStr);
+          if (Array.isArray(items) && items.length > 0) {
+            const mapped = items.map(item => ({
+              id: item.id || uuidv4(),
+              productID: item.productID?.toString() || "",
+              quantity: Number(item.quantity) || 1,
+              unit: item.unit || "",
+              unitPrice: item.unitPrice || 0,
+              totalPrice: item.totalPrice || 0,
+              description: item.description || ""
+            }));
+            form.reset({
+              ...defaultValues,
+              ...form.getValues(),
+              items: mapped
+            });
+            setTimeout(() => {
+              remove();
+              mapped.forEach((item) => append(item));
+            }, 0);
+          }
+        } catch {}
+        localStorage.removeItem('order_products');
+      }
+    }
+  }, [form, remove, append, productsFromRequest]);
+
+  // Theo dõi items, mỗi khi thay đổi thì lưu vào localStorage
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if (name?.startsWith('items')) {
+        const items = form.getValues('items');
+        if (Array.isArray(items) && items.length > 0) {
+          localStorage.setItem('purchaseOrderItemsDraft', JSON.stringify(items));
+        } else {
+          localStorage.removeItem('purchaseOrderItemsDraft');
+        }
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form]);
+
+  // Sử dụng useFieldArray để quản lý mảng các sản phẩm
   // Lấy dữ liệu nhà cung cấp và sản phẩm khi component được tải
   useEffect(() => {
     const fetchData = async () => {
@@ -200,6 +362,8 @@ export default function CreatePurchaseOrderPage() {
 
   // Xử lý khi submit form
   const onSubmit = async (data: FormValues) => {
+    // Xóa dữ liệu tạm sau khi submit thành công
+    localStorage.removeItem('purchaseOrderItemsDraft');
     setIsSubmitting(true)
     try {
       const orderItems = data.items.map((item) => ({
@@ -213,6 +377,8 @@ export default function CreatePurchaseOrderPage() {
 
       const orderData = {
         supplierID: parseInt(data.supplierID),
+        purchaseRequestID: purchaseRequestID ? parseInt(purchaseRequestID) : undefined,
+        approvedBy: data.approvedBy,
         orderDate: data.orderDate.toISOString(),
         expectedDeliveryDate: data.expectedDeliveryDate.toISOString(),
         totalAmount: totalAmount,
@@ -335,7 +501,19 @@ export default function CreatePurchaseOrderPage() {
         <Button variant="outline" size="icon" className="h-9 w-9 rounded-full hover:bg-muted/50" onClick={handleCancel}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <h1 className="text-3xl font-bold tracking-tight">Tạo đơn hàng mới</h1>
+        <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+          Tạo đơn hàng mới
+          <span className="text-base text-muted-foreground font-normal">
+            {createdOrderId
+              ? `#${createdOrderId}`
+              : predictedOrderId
+                ? `#${predictedOrderId}`
+                : `#${tempOrderId}`
+            }
+          </span>
+          <span className="text-base text-muted-foreground font-normal">{purchaseRequestID && `/ #PR-${purchaseRequestID.toString().padStart(4, '0')}`}</span>
+        </h1>
+
       </div>
 
       <Form {...form}>
@@ -347,34 +525,53 @@ export default function CreatePurchaseOrderPage() {
                 <CardDescription>Nhập thông tin cơ bản cho đơn hàng mới</CardDescription>
               </CardHeader>
               <CardContent className="space-y-5 pt-5">
-                <FormField
-                  control={form.control}
-                  name="supplierID"
-                  render={({ field }) => (
-                    <FormItem className="space-y-2">
-                      <FormLabel className="font-medium">Nhà cung cấp</FormLabel>
-                      {suppliers && suppliers.length > 0 && (
-                        <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger className="h-10 border-input focus:ring-1 focus:ring-primary">
-                              <SelectValue placeholder="Chọn nhà cung cấp">
-                                {suppliers.find(s => s.supplierID.toString() === field.value)?.supplierName || "Chọn nhà cung cấp"}
-                              </SelectValue>
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {suppliers.map((supplier) => (
-                              <SelectItem key={supplier.supplierID} value={supplier.supplierID.toString()}>
-                                {supplier.supplierName}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                <div className="flex flex-col md:flex-row gap-4 items-end">
+                  <div className="flex-1">
+                    <FormField
+                      control={form.control}
+                      name="supplierID"
+                      render={({ field }) => (
+                        <FormItem className="space-y-2">
+                          <FormLabel className="font-medium">Nhà cung cấp</FormLabel>
+                          {suppliers && suppliers.length > 0 && (
+                            <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger className="h-10 border-input focus:ring-1 focus:ring-primary">
+                                  <SelectValue placeholder="Chọn nhà cung cấp">
+                                    {suppliers.find(s => s.supplierID.toString() === field.value)?.supplierName || "Chọn nhà cung cấp"}
+                                  </SelectValue>
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {suppliers.map((supplier) => (
+                                  <SelectItem key={supplier.supplierID} value={supplier.supplierID.toString()}>
+                                    {supplier.supplierName}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                          <FormMessage className="text-xs" />
+                        </FormItem>
                       )}
-                      <FormMessage className="text-xs" />
-                    </FormItem>
-                  )}
-                />
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <FormField
+                      control={form.control}
+                      name="approvedBy"
+                      render={({ field }) => (
+                        <FormItem className="space-y-2">
+                          <FormLabel className="font-medium">Người phê duyệt</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Nhập tên người phê duyệt" {...field} />
+                          </FormControl>
+                          <FormMessage className="text-xs" />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
 
                 <div className="grid grid-cols-2 gap-5">
                   <FormField
@@ -445,37 +642,38 @@ export default function CreatePurchaseOrderPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
+
                       {fields.map((field, index) => (
                         <TableRow key={field.id} className="hover:bg-muted/20">
-                          <TableCell>
+                          <TableCell className="w-[200px]">
                             <FormField
                               control={form.control}
                               name={`items.${index}.productID`}
                               render={({ field }) => (
                                 <FormItem>
-                                  <Select
-                                    onValueChange={(value) => {
-                                      field.onChange(value)
-                                      handleProductChange(value, index)
-                                    }}
-                                    defaultValue={field.value}
-                                    value={field.value}
-                                  >
-                                    <FormControl>
+                                  <FormControl>
+                                    <Select
+                                      onValueChange={(value) => {
+                                        field.onChange(value)
+                                        handleProductChange(value, index)
+                                      }}
+                                      defaultValue={field.value}
+                                      value={field.value}
+                                    >
                                       <SelectTrigger className="h-9 border-input focus:ring-1 focus:ring-primary">
                                         <SelectValue placeholder="Chọn sản phẩm">
                                           {products.find((product) => product.productID.toString() === field.value)?.productName || "Chọn sản phẩm"}
                                         </SelectValue>
                                       </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                      {products.map((product) => (
-                                        <SelectItem key={product.productID} value={product.productID.toString()}>
-                                          {product.productName} - {product.unit} - Tồn kho: {product.stockQuantity}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
+                                      <SelectContent>
+                                        {products.map((product) => (
+                                          <SelectItem key={product.productID} value={product.productID.toString()}>
+                                            {product.productName} - {product.unit} - Tồn kho: {product.stockQuantity}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </FormControl>
                                   <FormMessage className="text-xs" />
                                 </FormItem>
                               )}
@@ -513,6 +711,7 @@ export default function CreatePurchaseOrderPage() {
                                       {...field}
                                       className="h-9 focus:ring-1 focus:ring-primary"
                                       placeholder="Đơn vị"
+                                      disabled
                                     />
                                   </FormControl>
                                   <FormMessage className="text-xs" />
@@ -542,7 +741,7 @@ export default function CreatePurchaseOrderPage() {
                             />
                           </TableCell>
                           <TableCell className="font-medium">
-                            {(form.getValues(`items.${index}.quantity`) || 0) * (form.getValues(`items.${index}.unitPrice`) || 0)}
+                            {((form.getValues(`items.${index}.quantity`) || 0) * (form.getValues(`items.${index}.unitPrice`) || 0)).toLocaleString("vi-VN")} VND
                           </TableCell>
                           <TableCell>
                             <Button

@@ -27,8 +27,8 @@ export function RecentOrders() {
   return (
     <Card className="col-span-3">
       <CardHeader>
-        <CardTitle className="text-xl text-primary">Recent Purchase Orders</CardTitle>
-        <CardDescription>Latest 5 purchase orders created in the system</CardDescription>
+        <CardTitle className="text-xl text-primary">Đơn đặt hàng gần đây</CardTitle>
+        <CardDescription>5 đơn hàng gần đây nhất</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-8">

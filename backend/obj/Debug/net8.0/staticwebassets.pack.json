@@ -41,8 +41,20 @@
       "PackagePath": "staticwebassets\\uploads\\192ab2c4-354f-4cb9-a21d-3261fe7fc361.jpg"
     },
     {
+      "Id": "D:\\MyWebAPI\\backend\\wwwroot\\uploads\\1b65aa78-ee9e-4ccf-8d10-f91c44c99199.jpg",
+      "PackagePath": "staticwebassets\\uploads\\1b65aa78-ee9e-4ccf-8d10-f91c44c99199.jpg"
+    },
+    {
+      "Id": "D:\\MyWebAPI\\backend\\wwwroot\\uploads\\241fe6bb-0188-4be0-a2ab-13ae2ba49ed2.jpg",
+      "PackagePath": "staticwebassets\\uploads\\241fe6bb-0188-4be0-a2ab-13ae2ba49ed2.jpg"
+    },
+    {
       "Id": "D:\\MyWebAPI\\backend\\wwwroot\\uploads\\268aed71-edc1-468c-8612-b4bc99c8f8f7.png",
       "PackagePath": "staticwebassets\\uploads\\268aed71-edc1-468c-8612-b4bc99c8f8f7.png"
+    },
+    {
+      "Id": "D:\\MyWebAPI\\backend\\wwwroot\\uploads\\275dcbff-2e79-4781-9924-3835cbd71de0.png",
+      "PackagePath": "staticwebassets\\uploads\\275dcbff-2e79-4781-9924-3835cbd71de0.png"
     },
     {
       "Id": "D:\\MyWebAPI\\backend\\wwwroot\\uploads\\2e6db6cc-98e3-4624-877b-d24b2ef6be66.jpg",
@@ -51,6 +63,10 @@
     {
       "Id": "D:\\MyWebAPI\\backend\\wwwroot\\uploads\\3518c6c8-189b-4c2a-bfc8-845794644f67.jpg",
       "PackagePath": "staticwebassets\\uploads\\3518c6c8-189b-4c2a-bfc8-845794644f67.jpg"
+    },
+    {
+      "Id": "D:\\MyWebAPI\\backend\\wwwroot\\uploads\\353ebad2-5043-46a8-8f7b-54fbb7172774.jpg",
+      "PackagePath": "staticwebassets\\uploads\\353ebad2-5043-46a8-8f7b-54fbb7172774.jpg"
     },
     {
       "Id": "D:\\MyWebAPI\\backend\\wwwroot\\uploads\\3dd7be71-3003-4060-b897-7ce2c4d74326.png",
@@ -77,6 +93,10 @@
       "PackagePath": "staticwebassets\\uploads\\45a10f90-a810-419e-b1b5-423746235474.png"
     },
     {
+      "Id": "D:\\MyWebAPI\\backend\\wwwroot\\uploads\\46c5ee44-d21b-458a-a8a8-3765f0794946.png",
+      "PackagePath": "staticwebassets\\uploads\\46c5ee44-d21b-458a-a8a8-3765f0794946.png"
+    },
+    {
       "Id": "D:\\MyWebAPI\\backend\\wwwroot\\uploads\\4c5b1142-939f-4656-b13a-fd5071f67891.jpg",
       "PackagePath": "staticwebassets\\uploads\\4c5b1142-939f-4656-b13a-fd5071f67891.jpg"
     },
@@ -101,6 +121,10 @@
       "PackagePath": "staticwebassets\\uploads\\58c73a99-68f0-45a3-a02c-1e93e4ab4ba6.png"
     },
     {
+      "Id": "D:\\MyWebAPI\\backend\\wwwroot\\uploads\\620bab5b-c256-4702-b4e3-46dfd1dd2b87.png",
+      "PackagePath": "staticwebassets\\uploads\\620bab5b-c256-4702-b4e3-46dfd1dd2b87.png"
+    },
+    {
       "Id": "D:\\MyWebAPI\\backend\\wwwroot\\uploads\\627f32d1-bb94-476b-8d7a-8803d767cb72.jpg",
       "PackagePath": "staticwebassets\\uploads\\627f32d1-bb94-476b-8d7a-8803d767cb72.jpg"
     },
@@ -111,6 +135,26 @@
     {
       "Id": "D:\\MyWebAPI\\backend\\wwwroot\\uploads\\66cd6cae-5b2c-4d07-86e8-3c614b4e95bc.jpg",
       "PackagePath": "staticwebassets\\uploads\\66cd6cae-5b2c-4d07-86e8-3c614b4e95bc.jpg"
+    },
+    {
+      "Id": "D:\\MyWebAPI\\backend\\wwwroot\\uploads\\67b4090e-d01a-466d-b478-221cf38aff13.png",
+      "PackagePath": "staticwebassets\\uploads\\67b4090e-d01a-466d-b478-221cf38aff13.png"
+    },
+    {
+      "Id": "D:\\MyWebAPI\\backend\\wwwroot\\uploads\\68179cd2-f37c-4013-8821-1f05b8ada7c6.png",
+      "PackagePath": "staticwebassets\\uploads\\68179cd2-f37c-4013-8821-1f05b8ada7c6.png"
+    },
+    {
+      "Id": "D:\\MyWebAPI\\backend\\wwwroot\\uploads\\6aabb152-dec9-4535-a981-241c1a8ce271.png",
+      "PackagePath": "staticwebassets\\uploads\\6aabb152-dec9-4535-a981-241c1a8ce271.png"
+    },
+    {
+      "Id": "D:\\MyWebAPI\\backend\\wwwroot\\uploads\\6dac1bf0-71c1-439c-8a33-1651233e5d07.png",
+      "PackagePath": "staticwebassets\\uploads\\6dac1bf0-71c1-439c-8a33-1651233e5d07.png"
+    },
+    {
+      "Id": "D:\\MyWebAPI\\backend\\wwwroot\\uploads\\6f0a9c37-1683-4aa4-b86a-5577cd3be8f9.png",
+      "PackagePath": "staticwebassets\\uploads\\6f0a9c37-1683-4aa4-b86a-5577cd3be8f9.png"
     },
     {
       "Id": "D:\\MyWebAPI\\backend\\wwwroot\\uploads\\70ecf705-3792-442e-97d4-a3b1f8406069.png",
@@ -153,8 +197,16 @@
       "PackagePath": "staticwebassets\\uploads\\84a9e226-6a16-48b0-a63b-c105cb109de7.jpg"
     },
     {
+      "Id": "D:\\MyWebAPI\\backend\\wwwroot\\uploads\\863f0ced-e4f7-46c2-95b2-1e7c9ec31bd4.png",
+      "PackagePath": "staticwebassets\\uploads\\863f0ced-e4f7-46c2-95b2-1e7c9ec31bd4.png"
+    },
+    {
       "Id": "D:\\MyWebAPI\\backend\\wwwroot\\uploads\\896f8d0b-9a09-4bf0-bbb0-013ea05c8137.jpg",
       "PackagePath": "staticwebassets\\uploads\\896f8d0b-9a09-4bf0-bbb0-013ea05c8137.jpg"
+    },
+    {
+      "Id": "D:\\MyWebAPI\\backend\\wwwroot\\uploads\\8acedd60-47e1-478d-b363-1bd6d64b689d.png",
+      "PackagePath": "staticwebassets\\uploads\\8acedd60-47e1-478d-b363-1bd6d64b689d.png"
     },
     {
       "Id": "D:\\MyWebAPI\\backend\\wwwroot\\uploads\\8d2748e5-da41-4981-b6fa-0781b90bfb76.png",
@@ -163,6 +215,10 @@
     {
       "Id": "D:\\MyWebAPI\\backend\\wwwroot\\uploads\\8e13f8ff-5ca3-4d85-b3fb-e23e492920d7.png",
       "PackagePath": "staticwebassets\\uploads\\8e13f8ff-5ca3-4d85-b3fb-e23e492920d7.png"
+    },
+    {
+      "Id": "D:\\MyWebAPI\\backend\\wwwroot\\uploads\\8fbf3d99-b2ee-4e48-936f-070a7479dd43.jpg",
+      "PackagePath": "staticwebassets\\uploads\\8fbf3d99-b2ee-4e48-936f-070a7479dd43.jpg"
     },
     {
       "Id": "D:\\MyWebAPI\\backend\\wwwroot\\uploads\\916da806-0e92-4d75-b43c-dc3f329e40bd.png",
@@ -193,6 +249,10 @@
       "PackagePath": "staticwebassets\\uploads\\a8f7e324-f133-4428-a5a4-9dd551fd682f.jpg"
     },
     {
+      "Id": "D:\\MyWebAPI\\backend\\wwwroot\\uploads\\b331a982-d09d-4c0f-8f9f-f158e9357059.png",
+      "PackagePath": "staticwebassets\\uploads\\b331a982-d09d-4c0f-8f9f-f158e9357059.png"
+    },
+    {
       "Id": "D:\\MyWebAPI\\backend\\wwwroot\\uploads\\b62486a3-810a-4f99-9c95-3482992f585c.png",
       "PackagePath": "staticwebassets\\uploads\\b62486a3-810a-4f99-9c95-3482992f585c.png"
     },
@@ -201,12 +261,24 @@
       "PackagePath": "staticwebassets\\uploads\\b7d1c853-7a4f-4fef-957e-5921d888e6b0.png"
     },
     {
+      "Id": "D:\\MyWebAPI\\backend\\wwwroot\\uploads\\bc429b8c-15dd-48d8-a901-4ff7e39c3da3.png",
+      "PackagePath": "staticwebassets\\uploads\\bc429b8c-15dd-48d8-a901-4ff7e39c3da3.png"
+    },
+    {
       "Id": "D:\\MyWebAPI\\backend\\wwwroot\\uploads\\c01d7d1f-7754-49cd-b791-4d956c78c09f.jpg",
       "PackagePath": "staticwebassets\\uploads\\c01d7d1f-7754-49cd-b791-4d956c78c09f.jpg"
     },
     {
+      "Id": "D:\\MyWebAPI\\backend\\wwwroot\\uploads\\c416149a-fab8-42aa-bf28-76781f3ae6a6.jpg",
+      "PackagePath": "staticwebassets\\uploads\\c416149a-fab8-42aa-bf28-76781f3ae6a6.jpg"
+    },
+    {
       "Id": "D:\\MyWebAPI\\backend\\wwwroot\\uploads\\c6477df7-3230-432c-88c8-415faa2e45b3.jpg",
       "PackagePath": "staticwebassets\\uploads\\c6477df7-3230-432c-88c8-415faa2e45b3.jpg"
+    },
+    {
+      "Id": "D:\\MyWebAPI\\backend\\wwwroot\\uploads\\c77a3124-9786-43e1-ba42-aa3b594b5470.png",
+      "PackagePath": "staticwebassets\\uploads\\c77a3124-9786-43e1-ba42-aa3b594b5470.png"
     },
     {
       "Id": "D:\\MyWebAPI\\backend\\wwwroot\\uploads\\c8bf4730-956d-4f1f-9dad-20ef205ac4d6.jpg",
@@ -233,12 +305,32 @@
       "PackagePath": "staticwebassets\\uploads\\d7a25ddb-8a4e-4634-af98-28a2a1b305e3.jpg"
     },
     {
+      "Id": "D:\\MyWebAPI\\backend\\wwwroot\\uploads\\e0d3cc15-50a9-49e6-b491-65a8104375d3.png",
+      "PackagePath": "staticwebassets\\uploads\\e0d3cc15-50a9-49e6-b491-65a8104375d3.png"
+    },
+    {
+      "Id": "D:\\MyWebAPI\\backend\\wwwroot\\uploads\\e5443420-9408-450a-b3cd-65f49b0df70a.png",
+      "PackagePath": "staticwebassets\\uploads\\e5443420-9408-450a-b3cd-65f49b0df70a.png"
+    },
+    {
+      "Id": "D:\\MyWebAPI\\backend\\wwwroot\\uploads\\e6030f9e-580a-4f85-9c79-c59e3772ba13.jpg",
+      "PackagePath": "staticwebassets\\uploads\\e6030f9e-580a-4f85-9c79-c59e3772ba13.jpg"
+    },
+    {
+      "Id": "D:\\MyWebAPI\\backend\\wwwroot\\uploads\\e6293a5a-2878-40da-91d2-5283f2489db5.jpg",
+      "PackagePath": "staticwebassets\\uploads\\e6293a5a-2878-40da-91d2-5283f2489db5.jpg"
+    },
+    {
       "Id": "D:\\MyWebAPI\\backend\\wwwroot\\uploads\\e74ced2a-097b-469b-b8b0-64a002e4906b.png",
       "PackagePath": "staticwebassets\\uploads\\e74ced2a-097b-469b-b8b0-64a002e4906b.png"
     },
     {
       "Id": "D:\\MyWebAPI\\backend\\wwwroot\\uploads\\ec305c5d-4455-4c51-b4de-e65c212b9cf6.jpg",
       "PackagePath": "staticwebassets\\uploads\\ec305c5d-4455-4c51-b4de-e65c212b9cf6.jpg"
+    },
+    {
+      "Id": "D:\\MyWebAPI\\backend\\wwwroot\\uploads\\ec33767f-0881-4eb9-a149-dccf28ba71e9.png",
+      "PackagePath": "staticwebassets\\uploads\\ec33767f-0881-4eb9-a149-dccf28ba71e9.png"
     },
     {
       "Id": "D:\\MyWebAPI\\backend\\wwwroot\\uploads\\ecb3961f-f8a1-4a4a-a465-e81085f20efe.jpg",
@@ -255,6 +347,10 @@
     {
       "Id": "D:\\MyWebAPI\\backend\\wwwroot\\uploads\\fdbc9846-21a5-4f01-8290-f6669206e7b6.jpg",
       "PackagePath": "staticwebassets\\uploads\\fdbc9846-21a5-4f01-8290-f6669206e7b6.jpg"
+    },
+    {
+      "Id": "D:\\MyWebAPI\\backend\\wwwroot\\uploads\\fdbd97f5-1149-42c0-9784-a59f86fa83e4.png",
+      "PackagePath": "staticwebassets\\uploads\\fdbd97f5-1149-42c0-9784-a59f86fa83e4.png"
     },
     {
       "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.MyWebAPI.Microsoft.AspNetCore.StaticWebAssets.props",

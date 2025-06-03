@@ -30,6 +30,7 @@ interface PurchaseOrderDetail {
 
 interface PurchaseOrder {
     purchaseOrderID: string
+    purchaseRequestID: number
     supplier: {
         supplierName: string
     }
@@ -274,6 +275,35 @@ export default function InvoicePage() {
         const numericValue = rawValue.replace(/\D/g, ''); // giữ lại số
         setPaymentAmount(numericValue); // lưu giá trị raw
     };
+    // Lấy class cho trạng thái
+  const getStatusClass = (status: string) => {
+    switch (status) {
+      case "Đang xử lý":
+        return "bg-yellow-100 text-yellow-800 border-yellow-300 hover:bg-yellow-200 transition-colors"
+      case "Đã gửi email":
+        return "bg-blue-100 text-blue-800 border-blue-300 hover:bg-blue-200 transition-colors"
+      case "Đã xác nhận":
+        return "bg-green-100 text-green-800 border-green-300 hover:bg-green-200 transition-colors"
+      case "Đã hủy":
+        return "bg-red-100 text-red-800 border-red-300 hover:bg-red-200 transition-colors"
+      case "Đang giao hàng":
+        return "bg-purple-100 text-purple-800 border-purple-300 hover:bg-purple-200 transition-colors"
+      case "Đã nhận hàng":
+        return "bg-emerald-100 text-emerald-800 border-emerald-300 hover:bg-emerald-200 transition-colors"
+      case "Đã trả hàng":
+        return "bg-orange-100 text-orange-800 border-orange-300 hover:bg-orange-200 transition-colors"
+      case "Đang nhận hàng":
+        return "bg-yellow-100 text-yellow-800 border-yellow-300 hover:bg-yellow-200 transition-colors"
+      case "Đã xuất hóa đơn":
+        return "bg-yellow-100 text-yellow-800 border-yellow-300 hover:bg-yellow-200 transition-colors"
+      case "Thanh toán một phần":
+        return "bg-yellow-100 text-yellow-800 border-yellow-300 hover:bg-yellow-200 transition-colors"
+      case "Đã thanh toán":
+        return "bg-green-100 text-green-800 border-green-300 hover:bg-green-200 transition-colors"
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-300 hover:bg-gray-200 transition-colors"
+    }
+  }
     return (
         <div className="container mx-auto py-10">
             <div className="flex items-center justify-between mb-6">
@@ -288,7 +318,13 @@ export default function InvoicePage() {
                     </Button>
                     <h1 className="text-xl font-bold">
                         {purchaseOrder?.status === "Đã xuất hóa đơn" ? "Ghi nhận thanh toán" : "Tạo hóa đơn"} cho đơn hàng {params?.id || "N/A"}
+                        {purchaseOrder?.purchaseRequestID && (
+                            <span className="text-base text-muted-foreground font-normal">/ #PR-{purchaseOrder.purchaseRequestID.toString().padStart(4, "0")}</span>
+                        )}
                     </h1>
+                    {purchaseOrder && (
+                        <Badge className={getStatusClass(purchaseOrder.status)}>{purchaseOrder.status}</Badge>
+                    )}
                 </div>
                 <div className="flex items-center gap-4">
                     {invoice && (
@@ -391,7 +427,7 @@ export default function InvoicePage() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {purchaseOrder.purchaseOrderDetails.map((detail) => (
+                                    {purchaseOrder.purchaseOrderDetails.filter(detail => detail.receivedQuantity > 0).map((detail) => (
                                         <TableRow key={detail.poDetailID}>
                                             <TableCell>{detail.product.productName}</TableCell>
                                             <TableCell>{detail.product.unit}</TableCell>

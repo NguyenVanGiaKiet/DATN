@@ -41,7 +41,7 @@ export default function ProductsPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [categoryFilter, setCategoryFilter] = useState("all")
   const [supplierFilter, setSupplierFilter] = useState("all")
-  const itemsPerPage = 10
+  const itemsPerPage = 5
 
   useEffect(() => {
     fetchProducts()
@@ -218,7 +218,7 @@ export default function ProductsPage() {
                 >
                   <CardContent className="p-4">
                   {product.imageUrl && (
-                      <div className="w-full h-32 rounded-md overflow-hidden border border-gray-200">
+                      <div className="w-full rounded-md overflow-hidden">
                         <img
                           src={product.imageUrl}
                           alt={`Ảnh ${product.productName}`}
@@ -227,9 +227,9 @@ export default function ProductsPage() {
                       </div>
                     )}
                     <div className="flex flex-col gap-2">
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-semibold">{product.productName}</h3>
-                        <div className="text-sm text-muted-foreground">
+                      <div className="flex items-center justify-between min-w-0">
+                        <h3 className="font-semibold truncate">{product.productName}</h3>
+                        <div className="text-sm text-muted-foreground flex-shrink-0">
                           Mã: {product.productID}
                         </div>
                       </div>

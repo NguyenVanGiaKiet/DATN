@@ -300,6 +300,9 @@ namespace MyWebAPI.Migrations
                     b.Property<DateTime>("OrderDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<int>("PurchaseRequestID")
+                        .HasColumnType("int");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -313,6 +316,8 @@ namespace MyWebAPI.Migrations
                         .HasColumnType("decimal(18,2)");
 
                     b.HasKey("PurchaseOrderID");
+
+                    b.HasIndex("PurchaseRequestID");
 
                     b.HasIndex("SupplierID");
 
@@ -360,6 +365,78 @@ namespace MyWebAPI.Migrations
                     b.HasIndex("PurchaseOrderID");
 
                     b.ToTable("PurchaseOrderDetails");
+                });
+
+            modelBuilder.Entity("MyWebAPI.Models.PurchaseRequest", b =>
+                {
+                    b.Property<int>("PurchaseRequestID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PurchaseRequestID"));
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Department")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Priority")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Requester")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ReviewedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("PurchaseRequestID");
+
+                    b.ToTable("PurchaseRequests");
+                });
+
+            modelBuilder.Entity("MyWebAPI.Models.PurchaseRequestItem", b =>
+                {
+                    b.Property<int>("PurchaseRequestItemID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PurchaseRequestItemID"));
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("ProductID")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PurchaseRequestID")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Unit")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("PurchaseRequestItemID");
+
+                    b.HasIndex("ProductID");
+
+                    b.HasIndex("PurchaseRequestID");
+
+                    b.ToTable("PurchaseRequestItems");
                 });
 
             modelBuilder.Entity("MyWebAPI.Models.ReturnToSupplier", b =>
@@ -525,11 +602,19 @@ namespace MyWebAPI.Migrations
 
             modelBuilder.Entity("MyWebAPI.Models.PurchaseOrder", b =>
                 {
+                    b.HasOne("MyWebAPI.Models.PurchaseRequest", "PurchaseRequest")
+                        .WithMany("PurchaseOrders")
+                        .HasForeignKey("PurchaseRequestID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("MyWebAPI.Models.Supplier", "Supplier")
                         .WithMany("PurchaseOrders")
                         .HasForeignKey("SupplierID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("PurchaseRequest");
 
                     b.Navigation("Supplier");
                 });
@@ -551,6 +636,25 @@ namespace MyWebAPI.Migrations
                     b.Navigation("Product");
 
                     b.Navigation("PurchaseOrder");
+                });
+
+            modelBuilder.Entity("MyWebAPI.Models.PurchaseRequestItem", b =>
+                {
+                    b.HasOne("MyWebAPI.Models.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductID")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("MyWebAPI.Models.PurchaseRequest", "PurchaseRequest")
+                        .WithMany("Items")
+                        .HasForeignKey("PurchaseRequestID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+
+                    b.Navigation("PurchaseRequest");
                 });
 
             modelBuilder.Entity("MyWebAPI.Models.ReturnToSupplier", b =>
@@ -600,6 +704,13 @@ namespace MyWebAPI.Migrations
                     b.Navigation("PurchaseOrderDetails");
 
                     b.Navigation("ReturnsToSupplier");
+                });
+
+            modelBuilder.Entity("MyWebAPI.Models.PurchaseRequest", b =>
+                {
+                    b.Navigation("Items");
+
+                    b.Navigation("PurchaseOrders");
                 });
 
             modelBuilder.Entity("MyWebAPI.Models.Supplier", b =>

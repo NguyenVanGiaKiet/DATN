@@ -59,6 +59,7 @@ type FormValues = z.infer<typeof formSchema>
 
 export default function CreateSupplierPage() {
   const router = useRouter()
+  const { addNotification } = useNotification();
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
@@ -115,10 +116,8 @@ export default function CreateSupplierPage() {
 
       setHasChanges(false)
 
-      // Lấy hàm addNotification từ context
-      const { addNotification } = useNotification();
-      // Đợi 1.5 giây để người dùng thấy thông báo trước khi chuyển trang
-      // Gửi notification lên NotificationCenter
+      
+
       addNotification({
         id: uuidv4(),
         title: "Tạo nhà cung cấp",

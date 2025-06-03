@@ -29,6 +29,7 @@ interface PurchaseOrderItem {
 
 interface PurchaseOrder {
   purchaseOrderID: string
+  purchaseRequestID: number
   supplierID: number
   supplier: {
     supplierID: number
@@ -203,6 +204,8 @@ export default function ReceiveProductsPage({ params }: { params: { id: string }
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <h1 className="text-3xl font-bold tracking-tight">Nhận hàng</h1>
+          <span className="text-base text-muted-foreground font-normal">#{params.id}</span>
+          <span className="text-base text-muted-foreground font-normal">{purchaseOrder?.purchaseRequestID && `/ #PR-${purchaseOrder.purchaseRequestID.toString().padStart(4, '0')}`}</span>
           {purchaseOrder && (
             <Badge className={getStatusClass(purchaseOrder.status)}>{purchaseOrder.status}</Badge>
           )}
@@ -270,6 +273,7 @@ export default function ReceiveProductsPage({ params }: { params: { id: string }
                   <TableHead className="font-medium">Sản phẩm</TableHead>
                   <TableHead className="font-medium">Đơn vị</TableHead>
                   <TableHead className="font-medium">Số lượng đặt</TableHead>
+                  <TableHead className="font-medium">Số lượng đã nhận</TableHead>
                   <TableHead className="font-medium">Số lượng nhận</TableHead>
                 </TableRow>
               </TableHeader>
@@ -279,6 +283,7 @@ export default function ReceiveProductsPage({ params }: { params: { id: string }
                     <TableCell className="font-medium">{item.product.productName}</TableCell>
                     <TableCell>{item.product.unit}</TableCell>
                     <TableCell>{item.quantity}</TableCell>
+                    <TableCell>{item.receivedQuantity ?? 0}</TableCell>
                     <TableCell>
                       <Input
                         type="number"

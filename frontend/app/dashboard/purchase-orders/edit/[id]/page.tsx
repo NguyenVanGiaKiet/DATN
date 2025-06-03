@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter, useParams } from "next/navigation"
+import { useRouter, useParams, useSearchParams } from "next/navigation"
 import { useForm, useFieldArray } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -66,6 +66,7 @@ interface PurchaseOrderItem {
 
 interface PurchaseOrder {
   purchaseOrderID: string
+  purchaseRequestID: number
   supplierID: number
   supplier: {
     supplierID: number
@@ -98,6 +99,7 @@ const orderItemSchema = z.object({
     })
     .min(0, "Đơn giá không được âm"),
   totalPrice: z.number().optional(),
+  unit: z.string().optional(),
 })
 
 const formSchema = z.object({
@@ -141,6 +143,7 @@ export default function EditPurchaseOrderPage({ params }: { params: { id: string
   const [receivedQuantities, setReceivedQuantities] = useState<{ [key: number]: number }>({})
   const [returnQuantities, setReturnQuantities] = useState<{ [key: number]: number }>({})
   const [isEditing, setIsEditing] = useState(true) // Add this state to control editing mode
+  const isOrderConfirmed = purchaseOrder?.status !== "Đang xử lý" && purchaseOrder?.status !== "Đã gửi email" ;
   const [createdOrderId, setCreatedOrderId] = useState<string | null>(null)
   const { addNotification } = useNotification();
   // Khởi tạo form
@@ -360,16 +363,16 @@ export default function EditPurchaseOrderPage({ params }: { params: { id: string
           })
         }
         throw new Error(errorData.message || "Không thể cập nhật đơn hàng")
-      }const result = await response.json()
+      } const result = await response.json()
       setCreatedOrderId(result.purchaseOrderID)
       // Gửi notification lên NotificationCenter
-            addNotification({
-              id: uuidv4(),
-              title: "Chỉnh sửa đơn hàng",
-              message: `Đơn hàng #${result.purchaseOrderID} đã được chỉnh sửa thành công với tổng giá trị ${totalAmount.toLocaleString('vi-VN')} VND.`,
-              date: new Date(),
-              read: false,
-            });
+      addNotification({
+        id: uuidv4(),
+        title: "Chỉnh sửa đơn hàng",
+        message: `Đơn hàng #${result.purchaseOrderID} đã được chỉnh sửa thành công với tổng giá trị ${totalAmount.toLocaleString('vi-VN')} VND.`,
+        date: new Date(),
+        read: false,
+      });
 
       // Hiển thị thông báo thành công
       toast.success(`Đơn hàng ${params.id} đã được cập nhật thành công với tổng giá trị ${totalAmount.toLocaleString('vi-VN')} VND.`)
@@ -393,23 +396,22 @@ export default function EditPurchaseOrderPage({ params }: { params: { id: string
   const handleProductChange = (productID: string, index: number) => {
     const product = products.find((p) => p.productID.toString() === productID)
     if (product) {
-      // Kiểm tra xem sản phẩm có trong purchaseOrderDetails không
       const existingDetail = purchaseOrder?.purchaseOrderDetails.find(
         (detail) => detail.productID.toString() === productID
       )
-
+  
       if (existingDetail) {
-        // Nếu có trong purchaseOrderDetails thì lấy giá và số lượng từ đó
         form.setValue(`items.${index}.quantity`, existingDetail.quantity)
         form.setValue(`items.${index}.unitPrice`, existingDetail.unitPrice)
+        form.setValue(`items.${index}.unit`, existingDetail.product.unit)
         form.setValue(`items.${index}.totalPrice`, existingDetail.totalPrice)
       } else {
-        // Nếu là sản phẩm mới, đặt số lượng mặc định là 1 và giá là 0
         form.setValue(`items.${index}.quantity`, 1)
         form.setValue(`items.${index}.unitPrice`, 0)
+        form.setValue(`items.${index}.unit`, product.unit)
         form.setValue(`items.${index}.totalPrice`, 0)
       }
-
+  
       // Cập nhật tổng giá trị đơn hàng
       const items = form.getValues("items")
       const newTotalAmount = items.reduce((sum, item) => {
@@ -465,6 +467,8 @@ export default function EditPurchaseOrderPage({ params }: { params: { id: string
         return "bg-orange-100 text-orange-800 border-orange-300 hover:bg-orange-200 transition-colors"
       case "Đang nhận hàng":
         return "bg-yellow-100 text-yellow-800 border-yellow-300 hover:bg-yellow-200 transition-colors"
+      case "Đã thanh toán":
+        return "bg-green-100 text-green-800 border-green-300 hover:bg-green-200 transition-colors"
       default:
         return "bg-gray-100 text-gray-800 border-gray-300 hover:bg-gray-200 transition-colors"
     }
@@ -629,7 +633,11 @@ Trân trọng,
           <Button variant="outline" size="icon" className="h-9 w-9 rounded-full hover:bg-muted/50" onClick={handleCancel}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <h1 className="text-3xl font-bold tracking-tight">Chỉnh sửa đơn hàng</h1>
+          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+            Chỉnh sửa đơn hàng
+            <span className="text-base text-muted-foreground font-normal">#{params.id}</span>
+            <span className="text-base text-muted-foreground font-normal">{purchaseOrder?.purchaseRequestID && `/ #PR-${purchaseOrder.purchaseRequestID.toString().padStart(4, '0')}`}</span>
+          </h1>
           {purchaseOrder && (
             <Badge className={getStatusClass(purchaseOrder.status)}>{purchaseOrder.status}</Badge>
           )}
@@ -723,11 +731,11 @@ Trân trọng,
                     <FormItem className="space-y-2">
                       <FormLabel className="font-medium">Nhà cung cấp</FormLabel>
                       {suppliers && suppliers.length > 0 && (
-                        <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                        <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value} disabled={isOrderConfirmed}>
                           <FormControl>
                             <SelectTrigger className="h-10 border-input focus:ring-1 focus:ring-primary">
                               <SelectValue placeholder="Chọn nhà cung cấp">
-                                {suppliers.find(s => s.supplierID.toString() === field.value)?.supplierName || "Chọn nhà cung cấp"}
+                                {suppliers.find(s => s.supplierID.toString() === field.value)?.supplierName}
                               </SelectValue>
                             </SelectTrigger>
                           </FormControl>
@@ -786,6 +794,7 @@ Trân trọng,
                           {...field}
                           placeholder="Thông tin bổ sung về đơn hàng này"
                           className="min-h-[100px] resize-none focus:ring-1 focus:ring-primary"
+                          readOnly={isOrderConfirmed}
                         />
                       </FormControl>
                       <FormMessage className="text-xs" />
@@ -818,9 +827,9 @@ Trân trọng,
                     </TableHeader>
                     <TableBody>
                       {fields.map((field, index) => (
-                        <TableRow key={field.id}>
+                        <TableRow key={field.id} className="hover:bg-muted/20">
                           {/* Sản phẩm */}
-                          <TableCell>
+                          <TableCell className="w-[200px]">
                             <FormField
                               control={form.control}
                               name={`items.${index}.productID`}
@@ -828,15 +837,21 @@ Trân trọng,
                                 <FormItem>
                                   <FormControl>
                                     <Select
-                                      value={field.value.toString()}
-                                      onValueChange={(value) => handleProductChange(value, index)}
-                                      disabled={!isEditing}
+                                      onValueChange={(value) => {
+                                        field.onChange(value)
+                                        handleProductChange(value, index)
+                                      }}
+                                      defaultValue={field.value}
+                                      value={field.value}
+                                      disabled={isOrderConfirmed}
                                     >
-                                      <SelectTrigger className="h-9 w-[200px] focus:ring-1 focus:ring-primary">
-                                        <SelectValue>
-                                          {products.find((product) => product.productID.toString() === field.value)?.productName || "Chọn sản phẩm"}
-                                        </SelectValue>
-                                      </SelectTrigger>
+                                      <FormControl>
+                                        <SelectTrigger className="h-9 border-input focus:ring-1 focus:ring-primary">
+                                          <SelectValue placeholder="Chọn sản phẩm">
+                                            {products.find((product) => product.productID.toString() === field.value)?.productName || "Chọn sản phẩm"}
+                                          </SelectValue>
+                                        </SelectTrigger>
+                                      </FormControl>
                                       <SelectContent>
                                         {products.map((product) => (
                                           <SelectItem key={product.productID} value={product.productID.toString()}>
@@ -846,6 +861,7 @@ Trân trọng,
                                       </SelectContent>
                                     </Select>
                                   </FormControl>
+
                                   <FormMessage className="text-xs" />
                                 </FormItem>
                               )}
@@ -863,7 +879,7 @@ Trân trọng,
                                       type="number"
                                       min="1"
                                       {...field}
-                                      disabled={!isEditing}
+                                      readOnly={isOrderConfirmed} disabled={!isEditing}
                                       onChange={(e) => handleQuantityChange(e, index)}
                                       className="h-9 w-24 focus:ring-1 focus:ring-primary"
                                     />
@@ -874,8 +890,24 @@ Trân trọng,
                             />
                           </TableCell>
                           {/* Đơn vị */}
-                          <TableCell className="h-9 w-24 focus:ring-1 focus:ring-primary">
-                            {products.find((p) => p.productID.toString() === form.getValues(`items.${index}.productID`))?.unit || "-"}
+                          <TableCell>
+                            <FormField
+                              control={form.control}
+                              name={`items.${index}.unit`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormControl>
+                                    <Input
+                                      {...field}
+                                      className="h-9 focus:ring-1 focus:ring-primary"
+                                      disabled
+                                      value={products.find((p) => p.productID.toString() === form.getValues(`items.${index}.productID`))?.unit || "Đơn vị"}
+                                    />
+                                  </FormControl>
+                                  <FormMessage className="text-xs" />
+                                </FormItem>
+                              )}
+                            />
                           </TableCell>
                           {/* Đơn giá */}
                           <TableCell className="text-right">
@@ -890,7 +922,7 @@ Trân trọng,
                                       min="0"
                                       step="1000"
                                       {...field}
-                                      disabled={!isEditing}
+                                      readOnly={isOrderConfirmed} disabled={!isEditing}
                                       onChange={(e) => handleUnitPriceChange(e, index)}
                                       className="h-9 w-32 focus:ring-1 focus:ring-primary"
                                     />
@@ -917,7 +949,7 @@ Trân trọng,
                               variant="ghost"
                               size="icon"
                               onClick={() => remove(index)}
-                              disabled={fields.length === 1 || !isEditing}
+                              disabled={fields.length === 1 || !isEditing || isOrderConfirmed}
                               className="h-8 w-8 rounded-full hover:bg-destructive/10 hover:text-destructive"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -932,8 +964,9 @@ Trân trọng,
                 <Button
                   variant="outline"
                   type="button"
-                  onClick={() => append({ productID: "", quantity: 1, unitPrice: 0, totalPrice: 0 })}
+                  onClick={() => append({ productID: "", quantity: 1, unit: "", unitPrice: 0, totalPrice: 0 })}
                   className="w-full border-dashed hover:border-primary hover:bg-primary/5"
+                  disabled={isSubmitting || isOrderConfirmed}
                 >
                   <Plus className="mr-2 h-4 w-4" />
                   Thêm sản phẩm
@@ -946,7 +979,7 @@ Trân trọng,
               </CardContent>
               <CardFooter className="flex justify-between bg-muted/20 rounded-b-lg">
                 <div className="flex items-center gap-2">
-                  <Button type="submit" disabled={isSubmitting}>
+                  <Button type="submit" disabled={isSubmitting || isOrderConfirmed}>
                     <Save className="mr-2 h-4 w-4" />
                     {isSubmitting ? 'Đang lưu...' : 'Lưu thay đổi'}
                   </Button>

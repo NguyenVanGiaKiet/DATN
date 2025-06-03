@@ -62,6 +62,7 @@ type ProductFormValues = z.infer<typeof productSchema>
 
 export default function CreateProductPage() {
   const router = useRouter()
+  const { addNotification } = useNotification();
   const [categories, setCategories] = useState<Category[]>([])
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [loading, setLoading] = useState(false)
@@ -174,7 +175,6 @@ export default function CreateProductPage() {
       if (data.imageUrl) {
         setAvatarSrc(data.imageUrl)
       }
-      const { addNotification } = useNotification();
       addNotification({
         id: uuidv4(),
         title: "Tạo sản phẩm",

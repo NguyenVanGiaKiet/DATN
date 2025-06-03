@@ -32,6 +32,7 @@ namespace MyWebAPI.Controllers
                 .Include(po => po.PurchaseOrderDetails)
                 .ThenInclude(pod => pod.Product)
                 .Include(po => po.Supplier)
+                .Include(po => po.PurchaseRequest)
                 .ToListAsync();
 
             var response = purchaseOrders.Select(po => FormatPurchaseOrderResponse(po));
@@ -45,6 +46,7 @@ namespace MyWebAPI.Controllers
                 .Include(po => po.PurchaseOrderDetails)
                 .ThenInclude(pod => pod.Product)
                 .Include(po => po.Supplier)
+                .Include(po => po.PurchaseRequest)
                 .FirstOrDefaultAsync(po => po.PurchaseOrderID == id);
 
             if (purchaseOrder == null)
@@ -83,7 +85,7 @@ namespace MyWebAPI.Controllers
                     Status = po.Status,
                     ApprovedBy = po.ApprovedBy,
                     SupplierName = po.Supplier.SupplierName,
-                    ImageUrl = po.Supplier.ImageUrl
+                    ImageUrl = po.Supplier.ImageUrl,
                 })
                 .ToListAsync();
 
@@ -100,11 +102,12 @@ namespace MyWebAPI.Controllers
                 {
                     PurchaseOrderID = GenerateNewPurchaseOrderID(),
                     SupplierID = purchaseOrderData.GetProperty("supplierID").GetInt32(),
+                    PurchaseRequestID = purchaseOrderData.GetProperty("purchaseRequestID").GetInt32(),
                     OrderDate = DateTime.Parse(purchaseOrderData.GetProperty("orderDate").GetString()),
                     ExpectedDeliveryDate = DateTime.Parse(purchaseOrderData.GetProperty("expectedDeliveryDate").GetString()),
                     TotalAmount = purchaseOrderData.GetProperty("totalAmount").GetDecimal(),
                     Status = "Đang xử lý",
-                    ApprovedBy = "System",
+                    ApprovedBy = purchaseOrderData.GetProperty("approvedBy").GetString(),
                     Notes = purchaseOrderData.TryGetProperty("notes", out var notesElement) ?
                         notesElement.GetString() : string.Empty
                 };
@@ -179,6 +182,7 @@ namespace MyWebAPI.Controllers
             {
                 purchaseOrder.PurchaseOrderID,
                 purchaseOrder.SupplierID,
+                purchaseOrder.PurchaseRequestID,
                 purchaseOrder.OrderDate,
                 purchaseOrder.ExpectedDeliveryDate,
                 purchaseOrder.TotalAmount,
@@ -193,6 +197,17 @@ namespace MyWebAPI.Controllers
                     phone = purchaseOrder.Supplier?.Phone ?? "Không xác định",
                     email = purchaseOrder.Supplier?.Email ?? "Không xác định",
                     address = purchaseOrder.Supplier?.Address ?? "Không xác định"
+                },
+                PurchaseRequest = purchaseOrder.PurchaseRequest == null ? null : new
+                {
+                    purchaseRequestID = purchaseOrder.PurchaseRequest.PurchaseRequestID,
+                    createdDate = purchaseOrder.PurchaseRequest.CreatedDate,
+                    requester = purchaseOrder.PurchaseRequest.Requester,
+                    department = purchaseOrder.PurchaseRequest.Department,
+                    priority = purchaseOrder.PurchaseRequest.Priority,
+                    reason = purchaseOrder.PurchaseRequest.Reason,
+                    status = purchaseOrder.PurchaseRequest.Status,
+                    reviewedBy = purchaseOrder.PurchaseRequest.ReviewedBy
                 },
                 PurchaseOrderDetails = purchaseOrder.PurchaseOrderDetails?.Select(pod => new
                 {
@@ -239,6 +254,9 @@ namespace MyWebAPI.Controllers
                 // Cập nhật thông tin cơ bản của đơn hàng
                 if (purchaseOrderData.TryGetProperty("supplierID", out var supplierIdElement))
                     existingOrder.SupplierID = supplierIdElement.GetInt32();
+
+                if (purchaseOrderData.TryGetProperty("purchaseRequestID", out var purchaseRequestIdElement))
+                    existingOrder.PurchaseRequestID = purchaseRequestIdElement.GetInt32();
 
                 if (purchaseOrderData.TryGetProperty("orderDate", out var orderDateElement))
                     existingOrder.OrderDate = DateTime.Parse(orderDateElement.GetString());
@@ -411,6 +429,12 @@ namespace MyWebAPI.Controllers
             {
                 return StatusCode(500, new { message = $"Lỗi khi cập nhật: {ex.Message}" });
             }
+        }
+        [HttpGet("next-id")]
+        public IActionResult GetNextPurchaseOrderId()
+        {
+            var nextId = GenerateNewPurchaseOrderID();
+            return Ok(new { nextId });
         }
     }
 }

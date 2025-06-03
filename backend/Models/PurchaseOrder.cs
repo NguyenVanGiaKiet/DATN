@@ -10,6 +10,9 @@ namespace MyWebAPI.Models
         public string? PurchaseOrderID { get; set; }
 
         [Required]
+        public int PurchaseRequestID { get; set; }
+
+        [Required]
         public int SupplierID { get; set; }
 
         [Required]
@@ -36,6 +39,9 @@ namespace MyWebAPI.Models
         // Navigation properties
         [ForeignKey("SupplierID")]
         public virtual Supplier? Supplier { get; set; }
+
+        [ForeignKey("PurchaseRequestID")]
+        public virtual PurchaseRequest? PurchaseRequest { get; set; }
 
         public virtual ICollection<PurchaseOrderDetail>? PurchaseOrderDetails { get; set; }
         public virtual ICollection<GoodsReceived>? GoodsReceived { get; set; }
